@@ -1,5 +1,7 @@
 # Codex Dev MCP Suite
 
+[![CI](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml)
+
 Four local, file-based MCP servers for solo developers and vibecoders who keep
 losing context when sessions hit "input too long" / get compacted / restart.
 Stop re-pasting context across sessions.
