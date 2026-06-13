@@ -1,6 +1,7 @@
 # Codex Dev MCP Suite
 
 [![CI](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/codex-dev-mcp-suite.svg)](https://www.npmjs.com/package/codex-dev-mcp-suite)
 
 Four local, file-based MCP servers for solo developers and vibecoders who keep
 losing context when sessions hit "input too long" / get compacted / restart.
@@ -32,6 +33,34 @@ All network features degrade gracefully: no endpoint = keyword mode, never an er
 ## Install
 
 Requires Node.js >= 18.
+
+### Quickest: run via npx (no clone)
+
+Point your MCP client at the published package — no install step needed:
+
+```toml
+# Codex CLI ~/.codex/config.toml
+[mcp_servers.project-memory]
+command = "npx"
+args = ["-y", "-p", "codex-dev-mcp-suite", "project-memory-mcp"]
+
+[mcp_servers.devjournal]
+command = "npx"
+args = ["-y", "-p", "codex-dev-mcp-suite", "devjournal-mcp"]
+
+[mcp_servers.checkpoint]
+command = "npx"
+args = ["-y", "-p", "codex-dev-mcp-suite", "checkpoint-mcp"]
+
+[mcp_servers.context-pack]
+command = "npx"
+args = ["-y", "-p", "codex-dev-mcp-suite", "context-pack-mcp"]
+```
+
+Or install globally: `npm i -g codex-dev-mcp-suite` → commands
+`project-memory-mcp`, `devjournal-mcp`, `checkpoint-mcp`, `context-pack-mcp`.
+
+### From source
 
 ```bash
 git clone https://github.com/<you>/codex-dev-mcp-suite.git
