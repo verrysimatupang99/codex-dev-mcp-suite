@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SERVER = path.join(__dirname, "server.js");
-const KEY = process.env.NINEROUTER_KEY || process.env.RERANK_KEY || "";
+const KEY = process.env.LLM_API_KEY || process.env.RERANK_KEY || process.env.NINEROUTER_KEY || "";
 const URL_BASE = "http://localhost:20128";
 
 function ping() {
@@ -18,7 +18,7 @@ function ping() {
   });
 }
 
-if (!KEY) { console.log("  ⚠ rerank test skipped (no NINEROUTER_KEY in env)"); process.exit(0); }
+if (!KEY) { console.log("  ⚠ rerank test skipped (no LLM_API_KEY in env)"); process.exit(0); }
 const online = await ping();
 if (!online) {
   console.log("  ⚠ rerank test skipped (9router not reachable)");
@@ -27,7 +27,7 @@ if (!online) {
 
 const VAULT = tmpDir("pm-rr-");
 const DEMO = "/tmp/pm-rr-demo";
-const env = { MEMORY_VAULT_DIR: VAULT, NINEROUTER_URL: URL_BASE, NINEROUTER_KEY: KEY, EMBED_KEY: "", RERANK_MODEL: "kr/claude-haiku-4.5", RERANK_TIMEOUT_MS: "40000" };
+const env = { MEMORY_VAULT_DIR: VAULT, LLM_BASE_URL: URL_BASE, LLM_API_KEY: KEY, EMBED_KEY: "", RERANK_MODEL: "kr/claude-haiku-4.5", RERANK_TIMEOUT_MS: "40000" };
 const client = new McpClient(SERVER, env);
 
 describe("project-memory (rerank/online)", () => {

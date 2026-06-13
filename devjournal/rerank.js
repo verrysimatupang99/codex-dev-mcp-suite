@@ -8,8 +8,8 @@ import http from "http";
 import https from "https";
 import { URL } from "url";
 
-const BASE = process.env.NINEROUTER_URL || process.env.RERANK_URL || "http://localhost:20128";
-const KEY = process.env.NINEROUTER_KEY || process.env.RERANK_KEY || "";
+const BASE = process.env.LLM_BASE_URL || process.env.RERANK_URL || process.env.NINEROUTER_URL || "http://localhost:20128";
+const KEY = process.env.LLM_API_KEY || process.env.RERANK_KEY || process.env.NINEROUTER_KEY || "";
 const MODEL = process.env.RERANK_MODEL || "kr/claude-haiku-4.5";
 const TIMEOUT_MS = Number(process.env.RERANK_TIMEOUT_MS || 30000);
 const ENABLED = process.env.RERANK_ENABLED !== "0";

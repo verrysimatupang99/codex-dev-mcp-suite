@@ -7,8 +7,8 @@ import http from "http";
 import https from "https";
 import { URL } from "url";
 
-const BASE = process.env.NINEROUTER_URL || process.env.EMBED_URL || "http://localhost:20128";
-const KEY = process.env.NINEROUTER_KEY || process.env.EMBED_KEY || "";
+const BASE = process.env.LLM_BASE_URL || process.env.EMBED_URL || process.env.NINEROUTER_URL || "http://localhost:20128";
+const KEY = process.env.LLM_API_KEY || process.env.EMBED_KEY || process.env.NINEROUTER_KEY || "";
 const MODEL = process.env.EMBED_MODEL || "bm/baai/bge-m3";
 const TIMEOUT_MS = Number(process.env.EMBED_TIMEOUT_MS || 15000);
 

@@ -21,7 +21,7 @@ per-project** by the working directory. Works with any MCP-capable client
 
 Recall auto-selects the best available mode:
 
-1. **semantic** — if an embeddings endpoint is configured (OpenAI-compatible `/v1/embeddings`)
+1. **semantic** — if an embeddings endpoint is configured (any OpenAI-compatible `/v1/embeddings`: OpenAI, Ollama, LM Studio, OpenRouter, vLLM, LiteLLM, 9router, ...)
 2. **rerank** — keyword prefilter then an LLM reranker (any OpenAI-compatible chat model)
 3. **keyword** — always-available offline fallback
 
@@ -49,9 +49,9 @@ args = ["/abs/path/codex-dev-mcp-suite/project-memory/server.js"]
 [mcp_servers.project-memory.env]
 MEMORY_VAULT_DIR = "~/.codex/memories/vault"
 # optional recall upgrades (see .env.example)
-# NINEROUTER_URL = "http://localhost:20128"
-# NINEROUTER_KEY = "..."
-# RERANK_MODEL = "kr/claude-haiku-4.5"
+# LLM_BASE_URL = "http://localhost:11434/v1"   # any OpenAI-compatible endpoint
+# LLM_API_KEY = "..."
+# RERANK_MODEL = "llama3.1:8b"
 
 [mcp_servers.checkpoint]
 command = "node"
