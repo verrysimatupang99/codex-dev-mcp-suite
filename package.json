@@ -1,0 +1,65 @@
+{
+  "name": "codex-dev-mcp-suite",
+  "version": "1.0.0",
+  "description": "Four local, file-based MCP servers for solo devs/vibecoders: persistent project memory, session handoff/resume, git-independent file checkpoints, and token-efficient project briefings. Works with any MCP client.",
+  "type": "module",
+  "license": "MIT",
+  "author": "maximalabs",
+  "homepage": "https://github.com/verrysimatupang99/codex-dev-mcp-suite#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/verrysimatupang99/codex-dev-mcp-suite.git"
+  },
+  "bugs": {
+    "url": "https://github.com/verrysimatupang99/codex-dev-mcp-suite/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "codex",
+    "claude-code",
+    "cursor",
+    "ai-memory",
+    "developer-tools",
+    "llm",
+    "context",
+    "vibecoding"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "project-memory-mcp": "bin/project-memory.mjs",
+    "devjournal-mcp": "bin/devjournal.mjs",
+    "checkpoint-mcp": "bin/checkpoint.mjs",
+    "context-pack-mcp": "bin/context-pack.mjs"
+  },
+  "scripts": {
+    "test": "node run-tests.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "files": [
+    "bin/*.mjs",
+    "project-memory/*.js",
+    "project-memory/*.mjs",
+    "project-memory/package.json",
+    "devjournal/*.js",
+    "devjournal/*.mjs",
+    "devjournal/package.json",
+    "checkpoint/*.js",
+    "checkpoint/*.mjs",
+    "checkpoint/package.json",
+    "context-pack/*.js",
+    "context-pack/*.mjs",
+    "context-pack/package.json",
+    "_testkit/*.mjs",
+    "run-tests.mjs",
+    "backfill-sessions-v2.mjs",
+    "CODEX_DEV_MCP_GUIDE.md",
+    "README.md",
+    "LICENSE",
+    ".env.example"
+  ]
+}
