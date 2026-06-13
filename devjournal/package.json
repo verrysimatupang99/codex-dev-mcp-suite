@@ -1,0 +1,14 @@
+{
+  "name": "devjournal-mcp",
+  "version": "1.0.0",
+  "description": "Per-project dev journal: session logs, decisions, next-steps timeline",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

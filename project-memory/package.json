@@ -1,0 +1,14 @@
+{
+  "name": "project-memory-mcp",
+  "version": "1.0.0",
+  "description": "Per-directory memory + indexing MCP server (Obsidian-style vault + Context7-style recall)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

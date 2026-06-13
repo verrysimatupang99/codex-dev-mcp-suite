@@ -1,0 +1,14 @@
+{
+  "name": "context-pack-mcp",
+  "version": "1.0.0",
+  "description": "Token-efficient project digest builder (tree, stack, key files, symbols)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

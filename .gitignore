@@ -1,0 +1,12 @@
+node_modules/
+package-lock.json
+*.log
+.DS_Store
+.env
+.env.local
+# local memory data (never commit personal vault/journal/checkpoints)
+memories/
+vault/
+journal/
+checkpoints/
+.backfill*-state.json
