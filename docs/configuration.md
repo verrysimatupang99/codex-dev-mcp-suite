@@ -73,6 +73,20 @@ MCP_PROVIDER_CHAIN3_MODEL=openai/gpt-4o-mini
 
 You can add `MCP_PROVIDER_CHAIN4_*`, `MCP_PROVIDER_CHAIN5_*`, and so on. The provider name is only a label; any OpenAI-compatible endpoint works when `BASE_URL`, `API_KEY`, and `MODEL` are set.
 
+On a `429`, `5xx`, timeout, or network error, a provider is put on a short cooldown and the next slot is tried. Tune the window with `MCP_PROVIDER_COOLDOWN_MS` (default `60000`).
+
+## Diagnostics
+
+Each server bin supports inspection flags that never start the server:
+
+```bash
+project-memory-mcp --version
+project-memory-mcp --doctor   # storage + model/provider config, API keys redacted
+project-memory-mcp --help
+```
+
+`--doctor` reports configured providers and storage paths and shows API keys only as `set (<n> chars)` or `not set`, never the raw value.
+
 Example OpenRouter-style config:
 
 ```bash

@@ -7,6 +7,11 @@ function value(name) {
   return String(process.env[name] || "").trim();
 }
 
+export function redactKey(key) {
+  const k = String(key || "");
+  return k ? `set (${k.length} chars)` : "not set";
+}
+
 function providerEnv(prefix) {
   const label = value(prefix);
   const base = value(`${prefix}_BASE_URL`);
@@ -16,20 +21,34 @@ function providerEnv(prefix) {
   return { label, base, key, model };
 }
 
-function numberedProviders() {
-  const providers = [];
-  const primary = providerEnv("MCP_PROVIDER_PRIMARY");
-  if (primary) providers.push(primary);
+function slotIssues(prefix) {
+  const present = ["", "_BASE_URL", "_API_KEY", "_MODEL"].some((s) => value(`${prefix}${s}`));
+  if (!present) return null;
+  const missing = [];
+  if (!value(prefix)) missing.push(`${prefix}`);
+  if (!value(`${prefix}_BASE_URL`)) missing.push(`${prefix}_BASE_URL`);
+  if (!value(`${prefix}_API_KEY`)) missing.push(`${prefix}_API_KEY`);
+  if (!value(`${prefix}_MODEL`)) missing.push(`${prefix}_MODEL`);
+  return missing.length ? { prefix, missing } : null;
+}
 
-  const slots = Object.keys(process.env)
-    .map((name) => name.match(/^MCP_PROVIDER_CHAIN(\d+)$/)?.[1])
+function numberedPrefixes() {
+  const prefixes = ["MCP_PROVIDER_PRIMARY"];
+  const nums = Object.keys(process.env)
+    .map((name) => name.match(/^MCP_PROVIDER_CHAIN(\d+)/)?.[1])
     .filter(Boolean)
     .map(Number)
-    .filter((n) => n >= 2)
-    .sort((a, b) => a - b);
+    .filter((n) => n >= 2);
+  for (const n of [...new Set(nums)].sort((a, b) => a - b)) {
+    prefixes.push(`MCP_PROVIDER_CHAIN${n}`);
+  }
+  return prefixes;
+}
 
-  for (const n of slots) {
-    const provider = providerEnv(`MCP_PROVIDER_CHAIN${n}`);
+function numberedProviders() {
+  const providers = [];
+  for (const prefix of numberedPrefixes()) {
+    const provider = providerEnv(prefix);
     if (provider) providers.push(provider);
   }
   return providers;
@@ -53,4 +72,38 @@ export function providerChainConfig() {
     if (legacy) providers.push(legacy);
   }
   return { providers, enabled: providers.length > 0, deterministic };
+}
+
+export function providerChainDiagnostics() {
+  const cfg = providerChainConfig();
+  const issues = [];
+  for (const prefix of numberedPrefixes()) {
+    const issue = slotIssues(prefix);
+    if (issue) issues.push(issue);
+  }
+  return {
+    deterministic: cfg.deterministic,
+    enabled: cfg.enabled,
+    providers: cfg.providers.map((p) => ({ label: p.label, base: p.base, model: p.model, apiKey: redactKey(p.key) })),
+    issues,
+  };
+}
+
+const COOLDOWN_MS = Number(process.env.MCP_PROVIDER_COOLDOWN_MS || 60000);
+const cooldowns = new Map();
+
+export function isCoolingDown(key, now = Date.now()) {
+  const until = cooldowns.get(key);
+  if (!until) return false;
+  if (now >= until) { cooldowns.delete(key); return false; }
+  return true;
+}
+
+export function recordOutcome(key, ok, now = Date.now()) {
+  if (ok) { cooldowns.delete(key); return; }
+  cooldowns.set(key, now + COOLDOWN_MS);
+}
+
+export function _resetCooldowns() {
+  cooldowns.clear();
 }

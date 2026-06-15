@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0 - 2026-06-15
+
+### Added
+- CLI meta handling for all bins: `--help`, `--version`, and `--doctor` (config diagnostics with API keys redacted) before the stdio server starts.
+- Provider diagnostics `providerChainDiagnostics()` that lists active providers with redacted keys and flags incomplete numbered slots.
+- Per-provider cooldown on `429`/`5xx`/timeout/network failures via `MCP_PROVIDER_COOLDOWN_MS` (default `60000`).
+- CI job that packs the tarball, installs it in a temp dir, and runs each bin `--version`.
+
+### Changed
+- Rerank now skips providers that are cooling down and records success/failure outcomes.
+- Rerank never logs API keys or response bodies.
+
 ## 1.1.0 - 2026-06-15
 
 ### Added

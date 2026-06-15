@@ -61,6 +61,22 @@ describe("devjournal", () => {
     process.env = old;
   });
 
+  it("diagnostics redacts keys and reports incomplete slots", async () => {
+    const old = { ...process.env };
+    process.env = { ...old };
+    for (const k of Object.keys(process.env)) if (k.startsWith("MCP_PROVIDER_") || k.startsWith("MCP_RERANK_") || k.startsWith("MCP_LLM_") || k === "RERANK_ENABLED" || k === "MCP_DETERMINISTIC_FALLBACK") delete process.env[k];
+    process.env.MCP_PROVIDER_PRIMARY = "groq";
+    process.env.MCP_PROVIDER_PRIMARY_BASE_URL = "https://api.groq.com/openai/v1";
+    process.env.MCP_PROVIDER_PRIMARY_API_KEY = "supersecretvalue";
+    process.env.MCP_PROVIDER_PRIMARY_MODEL = "llama-3.3-70b-versatile";
+    process.env.MCP_PROVIDER_CHAIN2 = "incomplete";
+    const { providerChainDiagnostics } = await import(`./provider-chain.js?diag-test=${Date.now()}`);
+    const d = providerChainDiagnostics();
+    assert(JSON.stringify(d).includes("supersecretvalue") === false, "diagnostics must not contain raw key");
+    assert(d.issues.some((i) => i.prefix === "MCP_PROVIDER_CHAIN2"), "incomplete slot should be reported");
+    process.env = old;
+  });
+
   it("lists expected tools", async () => {
     const tools = await client.listTools();
     for (const t of ["journal_log", "journal_handoff", "journal_resume", "journal_timeline", "journal_search", "journal_clear_handoff"])
