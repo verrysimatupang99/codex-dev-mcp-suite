@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/codex-dev-mcp-suite.svg)](https://www.npmjs.com/package/codex-dev-mcp-suite)
+[![npm downloads](https://img.shields.io/npm/dm/codex-dev-mcp-suite.svg)](https://www.npmjs.com/package/codex-dev-mcp-suite)
+[![license](https://img.shields.io/npm/l/codex-dev-mcp-suite.svg)](./LICENSE)
+[![node](https://img.shields.io/node/v/codex-dev-mcp-suite.svg)](https://nodejs.org)
 
 Published as `codex-dev-mcp-suite` for backward compatibility.
 
@@ -13,6 +16,51 @@ All servers are **local, dependency-light (only the MCP SDK), and split storage
 per-project** by the working directory. Works with any MCP-capable client
 (Codex CLI, Claude Code, Cursor, Cline, Gemini-compatible launchers, Hermes,
 or any stdio MCP host).
+
+## Quickstart
+
+Try it in 10 seconds (no clone, no config):
+
+```bash
+npx -y -p codex-dev-mcp-suite project-memory-mcp --help
+```
+
+Local-first by default: no hosted backend, no telemetry. Works offline with
+keyword recall; model/provider config is optional. For strict no-network mode,
+set `MCP_DETERMINISTIC_FALLBACK=true`.
+
+Register all four servers with an MCP client (Codex CLI shown):
+
+```toml
+# ~/.codex/config.toml
+[mcp_servers.project-memory]
+command = "npx"
+args = ["-y", "-p", "codex-dev-mcp-suite", "project-memory-mcp"]
+
+[mcp_servers.devjournal]
+command = "npx"
+args = ["-y", "-p", "codex-dev-mcp-suite", "devjournal-mcp"]
+
+[mcp_servers.checkpoint]
+command = "npx"
+args = ["-y", "-p", "codex-dev-mcp-suite", "checkpoint-mcp"]
+
+[mcp_servers.context-pack]
+command = "npx"
+args = ["-y", "-p", "codex-dev-mcp-suite", "context-pack-mcp"]
+```
+
+Inspect any server without starting it:
+
+```bash
+project-memory-mcp --version
+project-memory-mcp --doctor   # config diagnostics; API keys redacted
+```
+
+Other clients (Claude Code, Cursor, Cline, ...): see
+[`docs/clients/`](docs/clients/). Full env reference:
+[`docs/configuration.md`](docs/configuration.md). Data flow:
+[`docs/privacy.md`](docs/privacy.md).
 
 ## The four servers
 
