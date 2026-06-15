@@ -28,6 +28,7 @@ import os from "os";
 import crypto from "crypto";
 import { embed, embedOne, cosine, embeddingConfig } from "./embedding.js";
 import { rerank, rerankConfig } from "./rerank.js";
+import { deterministicEnabled } from "./env.js";
 
 const VAULT_ROOT =
   process.env.MEMORY_VAULT_DIR ||
@@ -318,8 +319,8 @@ class ProjectMemoryServer {
       return score;
     };
 
-    let mode = "keyword";
-    const qVec = await embedOne(query);
+    let mode = deterministicEnabled() ? "deterministic" : "keyword";
+    const qVec = deterministicEnabled() ? null : await embedOne(query);
     const haveEmb = qVec && notes.some((n) => Array.isArray(n.embedding));
 
     let scored;
@@ -418,6 +419,7 @@ class ProjectMemoryServer {
 
   async reindex({ dir, force = false }) {
     const p = this.paths(dir);
+    if (deterministicEnabled()) return { content: [{ type: "text", text: `Reindex ${p.slug}: skipped (deterministic no-network mode; embeddings disabled).` }] };
     const index = await this.loadIndex(p);
     const notes = Object.values(index.notes || {});
     if (notes.length === 0) return { content: [{ type: "text", text: `No memories for ${p.slug} yet.` }] };
