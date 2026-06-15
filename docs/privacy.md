@@ -17,7 +17,7 @@ Default storage paths are under `~/.codex/memories/...`; you can override them w
 
 Nothing leaves your machine by default. `project-memory` and `devjournal` use offline keyword scoring unless you configure an external OpenAI-compatible model endpoint.
 
-If you set model environment variables such as `MCP_LLM_BASE_URL`, `MCP_EMBED_BASE_URL`, or `MCP_RERANK_BASE_URL`, the related query text and candidate snippets may be sent to that endpoint for embeddings or reranking. The endpoint can be local (Ollama, LM Studio, vLLM, LiteLLM) or remote (Groq, Cerebras, OpenRouter, 9Router, OpenAI-compatible gateways).
+If you set model environment variables such as `MCP_LLM_BASE_URL`, `MCP_EMBED_BASE_URL`, `MCP_RERANK_BASE_URL`, or numbered provider slots like `MCP_PROVIDER_PRIMARY_BASE_URL`, the related query text and candidate snippets may be sent to that endpoint for embeddings or reranking. The endpoint can be local (Ollama, LM Studio, vLLM, LiteLLM) or remote (Groq, Cerebras, OpenRouter, 9Router, OpenAI-compatible gateways).
 
 ## Hard no-network mode
 

@@ -40,6 +40,27 @@ describe("devjournal", () => {
     process.env = old;
   });
 
+  it("builds provider chain with legacy fallback", async () => {
+    const old = { ...process.env };
+    process.env = { ...old };
+    for (const k of Object.keys(process.env)) if (k.startsWith("MCP_PROVIDER_") || k.startsWith("MCP_RERANK_") || k.startsWith("MCP_LLM_") || k === "RERANK_ENABLED" || k === "MCP_DETERMINISTIC_FALLBACK") delete process.env[k];
+    process.env.MCP_PROVIDER_PRIMARY = "groq";
+    process.env.MCP_PROVIDER_PRIMARY_BASE_URL = "https://api.groq.com/openai/v1";
+    process.env.MCP_PROVIDER_PRIMARY_API_KEY = "groq-key";
+    process.env.MCP_PROVIDER_PRIMARY_MODEL = "llama-3.3-70b-versatile";
+    process.env.MCP_PROVIDER_CHAIN2 = "cerebras";
+    process.env.MCP_PROVIDER_CHAIN2_BASE_URL = "https://api.cerebras.ai/v1";
+    process.env.MCP_PROVIDER_CHAIN2_API_KEY = "cerebras-key";
+    process.env.MCP_PROVIDER_CHAIN2_MODEL = "llama-3.3-70b";
+    const { providerChainConfig } = await import(`./provider-chain.js?chain-test=${Date.now()}`);
+    assert(JSON.stringify(providerChainConfig().providers.map((p) => p.label)) === JSON.stringify(["groq", "cerebras"]), "journal provider chain should preserve order");
+    for (const k of Object.keys(process.env)) if (k.startsWith("MCP_PROVIDER_")) delete process.env[k];
+    process.env.MCP_RERANK_API_KEY = "legacy-key";
+    process.env.MCP_RERANK_MODEL = "legacy-model";
+    assert(providerChainConfig().providers[0].label === "legacy", "legacy fallback should work");
+    process.env = old;
+  });
+
   it("lists expected tools", async () => {
     const tools = await client.listTools();
     for (const t of ["journal_log", "journal_handoff", "journal_resume", "journal_timeline", "journal_search", "journal_clear_handoff"])

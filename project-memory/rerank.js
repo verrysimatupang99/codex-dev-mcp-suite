@@ -8,23 +8,28 @@ import http from "http";
 import https from "https";
 import { URL } from "url";
 import { deterministicEnabled } from "./env.js";
+import { providerChainConfig } from "./provider-chain.js";
 
-const BASE = process.env.MCP_RERANK_BASE_URL || process.env.MCP_LLM_BASE_URL || process.env.LLM_BASE_URL || process.env.RERANK_URL || process.env.NINEROUTER_URL || "http://localhost:20128";
-const KEY = process.env.MCP_RERANK_API_KEY || process.env.MCP_LLM_API_KEY || process.env.LLM_API_KEY || process.env.RERANK_KEY || process.env.NINEROUTER_KEY || "";
-const MODEL = process.env.MCP_RERANK_MODEL || process.env.RERANK_MODEL || "kr/claude-haiku-4.5";
 const TIMEOUT_MS = Number(process.env.RERANK_TIMEOUT_MS || 30000);
 const ENABLED = process.env.RERANK_ENABLED !== "0";
 
 export function rerankConfig() {
-  return { base: BASE, model: MODEL, enabled: Boolean(KEY) && ENABLED && !deterministicEnabled(), deterministic: deterministicEnabled() };
+  const cfg = providerChainConfig();
+  const first = cfg.providers[0] || {};
+  return {
+    base: first.base,
+    model: first.model,
+    providers: cfg.providers.map(({ label, base, model }) => ({ label, base, model })),
+    enabled: ENABLED && cfg.enabled && !deterministicEnabled(),
+    deterministic: deterministicEnabled(),
+  };
 }
 
-function chat(messages) {
+function chatWithProvider(provider, messages) {
   return new Promise((resolve) => {
-    if (!KEY || !ENABLED || deterministicEnabled()) return resolve(null);
     let u;
-    try { u = new URL("/v1/chat/completions", BASE); } catch { return resolve(null); }
-    const payload = Buffer.from(JSON.stringify({ model: MODEL, stream: false, temperature: 0, max_tokens: 200, messages }));
+    try { u = new URL("/v1/chat/completions", provider.base); } catch { return resolve(null); }
+    const payload = Buffer.from(JSON.stringify({ model: provider.model, stream: false, temperature: 0, max_tokens: 200, messages }));
     const lib = u.protocol === "https:" ? https : http;
     const req = lib.request(
       {
@@ -32,7 +37,7 @@ function chat(messages) {
         port: u.port || (u.protocol === "https:" ? 443 : 80),
         path: u.pathname,
         method: "POST",
-        headers: { "Content-Type": "application/json", "Content-Length": payload.length, Authorization: `Bearer ${KEY}` },
+        headers: { "Content-Type": "application/json", "Content-Length": payload.length, Authorization: `Bearer ${provider.key}` },
         timeout: TIMEOUT_MS,
       },
       (res) => {
@@ -40,7 +45,6 @@ function chat(messages) {
         res.on("data", (c) => (body += c));
         res.on("end", () => {
           if (res.statusCode !== 200) return resolve(null);
-          // handle plain JSON or SSE stream just in case
           try {
             const j = JSON.parse(body);
             return resolve(j?.choices?.[0]?.message?.content ?? null);
@@ -67,12 +71,22 @@ function chat(messages) {
   });
 }
 
+async function chat(messages) {
+  if (!ENABLED || deterministicEnabled()) return null;
+  const { providers } = providerChainConfig();
+  for (const provider of providers) {
+    const out = await chatWithProvider(provider, messages);
+    if (out) return out;
+  }
+  return null;
+}
+
 /**
  * Given a query and candidates [{id, title, snippet}], ask the model to return
  * the ids ordered by relevance. Returns an array of ids, or null on failure.
  */
 export async function rerank(query, candidates, topK = 5) {
-  if (!KEY || !ENABLED || deterministicEnabled() || !candidates || candidates.length === 0) return null;
+  if (!ENABLED || deterministicEnabled() || !candidates || candidates.length === 0 || !providerChainConfig().enabled) return null;
   const list = candidates.map((c, i) => `[${i + 1}] (id:${c.id}) ${c.title}\n    ${String(c.snippet || "").replace(/\s+/g, " ").slice(0, 200)}`).join("\n");
   const sys = "You are a search reranker. Given a user query and a numbered list of notes, return the most relevant notes ordered best-first. Respond with ONLY a comma-separated list of the bracket numbers, e.g. 3,1,5. No prose.";
   const user = `Query: ${query}\n\nNotes:\n${list}\n\nReturn the top ${topK} bracket numbers, best first, comma-separated:`;
