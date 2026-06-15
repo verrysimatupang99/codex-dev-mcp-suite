@@ -52,7 +52,26 @@ The suite is provider-neutral. A practical remote setup is:
 2. **Cerebras** as a second fast provider for outages or model fit.
 3. **OpenRouter** as broad fallback for many OpenAI-compatible models.
 
-That chain is a deployment recommendation, not a built-in router in `v1.0.1`. Choose one endpoint in your MCP client env, or put LiteLLM/9Router/another gateway in front if you want automatic provider failover today.
+In `v1.1`, chat/rerank can use built-in numbered fallback slots. Configure only primary if you want one provider, or add more numbered chain entries.
+
+```bash
+MCP_PROVIDER_PRIMARY=groq
+MCP_PROVIDER_PRIMARY_BASE_URL=https://api.groq.com/openai/v1
+MCP_PROVIDER_PRIMARY_API_KEY=<groq-key>
+MCP_PROVIDER_PRIMARY_MODEL=llama-3.3-70b-versatile
+
+MCP_PROVIDER_CHAIN2=cerebras
+MCP_PROVIDER_CHAIN2_BASE_URL=https://api.cerebras.ai/v1
+MCP_PROVIDER_CHAIN2_API_KEY=<cerebras-key>
+MCP_PROVIDER_CHAIN2_MODEL=llama-3.3-70b
+
+MCP_PROVIDER_CHAIN3=openrouter
+MCP_PROVIDER_CHAIN3_BASE_URL=https://openrouter.ai/api/v1
+MCP_PROVIDER_CHAIN3_API_KEY=<openrouter-key>
+MCP_PROVIDER_CHAIN3_MODEL=openai/gpt-4o-mini
+```
+
+You can add `MCP_PROVIDER_CHAIN4_*`, `MCP_PROVIDER_CHAIN5_*`, and so on. The provider name is only a label; any OpenAI-compatible endpoint works when `BASE_URL`, `API_KEY`, and `MODEL` are set.
 
 Example OpenRouter-style config:
 

@@ -57,6 +57,53 @@ describe("project-memory", () => {
     process.env = old;
   });
 
+  it("builds numbered provider chain in order", async () => {
+    const old = { ...process.env };
+    process.env = { ...old };
+    for (const k of Object.keys(process.env)) if (k.startsWith("MCP_PROVIDER_") || k.startsWith("MCP_RERANK_") || k.startsWith("MCP_LLM_") || k === "RERANK_ENABLED" || k === "MCP_DETERMINISTIC_FALLBACK") delete process.env[k];
+    process.env.MCP_PROVIDER_PRIMARY = "groq";
+    process.env.MCP_PROVIDER_PRIMARY_BASE_URL = "https://api.groq.com/openai/v1";
+    process.env.MCP_PROVIDER_PRIMARY_API_KEY = "groq-key";
+    process.env.MCP_PROVIDER_PRIMARY_MODEL = "llama-3.3-70b-versatile";
+    process.env.MCP_PROVIDER_CHAIN3 = "openrouter";
+    process.env.MCP_PROVIDER_CHAIN3_BASE_URL = "https://openrouter.ai/api/v1";
+    process.env.MCP_PROVIDER_CHAIN3_API_KEY = "openrouter-key";
+    process.env.MCP_PROVIDER_CHAIN3_MODEL = "openai/gpt-4o-mini";
+    process.env.MCP_PROVIDER_CHAIN2 = "cerebras";
+    process.env.MCP_PROVIDER_CHAIN2_BASE_URL = "https://api.cerebras.ai/v1";
+    process.env.MCP_PROVIDER_CHAIN2_API_KEY = "cerebras-key";
+    process.env.MCP_PROVIDER_CHAIN2_MODEL = "llama-3.3-70b";
+    process.env.MCP_PROVIDER_CHAIN4 = "custom";
+    process.env.MCP_PROVIDER_CHAIN4_BASE_URL = "https://custom.example/v1";
+    process.env.MCP_PROVIDER_CHAIN4_API_KEY = "custom-key";
+    process.env.MCP_PROVIDER_CHAIN4_MODEL = "custom-model";
+    const { providerChainConfig } = await import(`./provider-chain.js?chain-test=${Date.now()}`);
+    const cfg = providerChainConfig();
+    assert(cfg.enabled, "provider chain should be enabled");
+    assert(JSON.stringify(cfg.providers.map((p) => p.label)) === JSON.stringify(["groq", "cerebras", "openrouter", "custom"]), "providers should be primary then numeric chain order");
+    process.env = old;
+  });
+
+  it("skips incomplete provider slots and honors deterministic disable", async () => {
+    const old = { ...process.env };
+    process.env = { ...old };
+    for (const k of Object.keys(process.env)) if (k.startsWith("MCP_PROVIDER_") || k.startsWith("MCP_RERANK_") || k.startsWith("MCP_LLM_") || k === "RERANK_ENABLED" || k === "MCP_DETERMINISTIC_FALLBACK") delete process.env[k];
+    process.env.MCP_PROVIDER_PRIMARY = "groq";
+    process.env.MCP_PROVIDER_PRIMARY_BASE_URL = "https://api.groq.com/openai/v1";
+    process.env.MCP_PROVIDER_PRIMARY_API_KEY = "groq-key";
+    process.env.MCP_PROVIDER_CHAIN2 = "missing-model";
+    process.env.MCP_PROVIDER_CHAIN2_BASE_URL = "https://bad.example/v1";
+    process.env.MCP_PROVIDER_CHAIN2_API_KEY = "bad-key";
+    const mod = await import(`./provider-chain.js?skip-test=${Date.now()}`);
+    assert(mod.providerChainConfig().enabled === false, "incomplete primary should not enable chain");
+    process.env.MCP_RERANK_API_KEY = "legacy-key";
+    process.env.MCP_RERANK_MODEL = "legacy-model";
+    assert(mod.providerChainConfig().providers[0].label === "legacy", "legacy fallback should work when numbered slots incomplete");
+    process.env.MCP_DETERMINISTIC_FALLBACK = "true";
+    assert(mod.providerChainConfig().enabled === false, "deterministic should disable providers");
+    process.env = old;
+  });
+
   it("lists expected tools", async () => {
     const tools = await client.listTools();
     for (const t of ["memory_save", "memory_recall", "memory_list", "memory_get", "memory_delete", "memory_reindex"])

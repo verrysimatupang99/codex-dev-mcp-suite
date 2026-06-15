@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 - 2026-06-15
+
+### Added
+- Added optional numbered provider chain for chat/rerank fallback: `MCP_PROVIDER_PRIMARY_*`, `MCP_PROVIDER_CHAIN2_*`, `MCP_PROVIDER_CHAIN3_*`, and higher.
+- Added provider-chain tests for ordered fallback, incomplete slot skipping, deterministic disable, and legacy fallback.
+
 ## 1.0.1 - 2026-06-15
 
 ### Added
