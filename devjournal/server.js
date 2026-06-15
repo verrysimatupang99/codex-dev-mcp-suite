@@ -32,6 +32,7 @@ import path from "path";
 import os from "os";
 import crypto from "crypto";
 import { rerank, rerankConfig } from "./rerank.js";
+import { deterministicEnabled } from "./env.js";
 
 const ROOT =
   process.env.JOURNAL_DIR ||
@@ -272,7 +273,7 @@ class DevJournalServer {
     let ranked = entries.map((e, i) => ({ e, i, sc: score(e) }))
       .sort((a, b) => b.sc - a.sc || b.i - a.i);
     let pool = ranked.filter((x) => x.sc > 0).slice(0, 20);
-    let mode = "keyword";
+    let mode = deterministicEnabled() ? "deterministic" : "keyword";
     if (pool.length === 0 && rerankConfig().enabled) {
       pool = ranked.slice(0, 20); // fall back to recent for semantic-style queries
     }

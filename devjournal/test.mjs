@@ -10,6 +10,36 @@ const PROJ = "/tmp/jrnl-demo-project";
 const client = new McpClient(SERVER, { JOURNAL_DIR: STORE });
 
 describe("devjournal", () => {
+  it("labels search as deterministic when hard no-network mode is enabled", async () => {
+    const detStore = tmpDir("jrnl-det-");
+    const detClient = new McpClient(SERVER, { JOURNAL_DIR: detStore, MCP_DETERMINISTIC_FALLBACK: "yes", MCP_LLM_API_KEY: "should-not-be-used" });
+    await detClient.start();
+    try {
+      await detClient.callTool("journal_log", { dir: "/tmp/jrnl-det-project", title: "Local search", type: "done", body: "deterministic mode skips rerank" });
+      const r = await detClient.callTool("journal_search", { dir: "/tmp/jrnl-det-project", query: "deterministic rerank" });
+      assertIncludes(r.text, "[deterministic]");
+    } finally {
+      await detClient.stop();
+      rmrf(detStore);
+    }
+  });
+
+  it("prefers neutral MCP rerank env aliases", async () => {
+    const old = { ...process.env };
+    process.env.MCP_RERANK_BASE_URL = "http://journal-rerank.example/v1";
+    process.env.MCP_RERANK_API_KEY = "journal-rerank-key";
+    process.env.MCP_RERANK_MODEL = "journal-rerank-model";
+    process.env.NINEROUTER_URL = "http://legacy.example";
+    process.env.NINEROUTER_KEY = "legacy-key";
+    process.env.RERANK_MODEL = "legacy-model";
+    const { rerankConfig } = await import(`./rerank.js?alias-test=${Date.now()}`);
+    const cfg = rerankConfig();
+    assert(cfg.base === "http://journal-rerank.example/v1", "MCP_RERANK_BASE_URL should win");
+    assert(cfg.model === "journal-rerank-model", "MCP_RERANK_MODEL should win");
+    assert(cfg.enabled === true, "MCP_RERANK_API_KEY should enable rerank");
+    process.env = old;
+  });
+
   it("lists expected tools", async () => {
     const tools = await client.listTools();
     for (const t of ["journal_log", "journal_handoff", "journal_resume", "journal_timeline", "journal_search", "journal_clear_handoff"])

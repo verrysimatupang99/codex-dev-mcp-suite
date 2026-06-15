@@ -1,5 +1,5 @@
 /**
- * LLM reranker via 9router chat models (e.g. Kiro kr/claude-haiku-4.5).
+ * LLM reranker via any OpenAI-compatible /v1/chat/completions model.
  * Used when embeddings are unavailable: keyword prefilter -> LLM picks the
  * most relevant candidates. Degrades gracefully: returns null on any failure
  * so callers fall back to keyword ordering. Never throws.
@@ -7,20 +7,21 @@
 import http from "http";
 import https from "https";
 import { URL } from "url";
+import { deterministicEnabled } from "./env.js";
 
-const BASE = process.env.LLM_BASE_URL || process.env.RERANK_URL || process.env.NINEROUTER_URL || "http://localhost:20128";
-const KEY = process.env.LLM_API_KEY || process.env.RERANK_KEY || process.env.NINEROUTER_KEY || "";
-const MODEL = process.env.RERANK_MODEL || "kr/claude-haiku-4.5";
+const BASE = process.env.MCP_RERANK_BASE_URL || process.env.MCP_LLM_BASE_URL || process.env.LLM_BASE_URL || process.env.RERANK_URL || process.env.NINEROUTER_URL || "http://localhost:20128";
+const KEY = process.env.MCP_RERANK_API_KEY || process.env.MCP_LLM_API_KEY || process.env.LLM_API_KEY || process.env.RERANK_KEY || process.env.NINEROUTER_KEY || "";
+const MODEL = process.env.MCP_RERANK_MODEL || process.env.RERANK_MODEL || "kr/claude-haiku-4.5";
 const TIMEOUT_MS = Number(process.env.RERANK_TIMEOUT_MS || 30000);
 const ENABLED = process.env.RERANK_ENABLED !== "0";
 
 export function rerankConfig() {
-  return { base: BASE, model: MODEL, enabled: Boolean(KEY) && ENABLED };
+  return { base: BASE, model: MODEL, enabled: Boolean(KEY) && ENABLED && !deterministicEnabled(), deterministic: deterministicEnabled() };
 }
 
 function chat(messages) {
   return new Promise((resolve) => {
-    if (!KEY || !ENABLED) return resolve(null);
+    if (!KEY || !ENABLED || deterministicEnabled()) return resolve(null);
     let u;
     try { u = new URL("/v1/chat/completions", BASE); } catch { return resolve(null); }
     const payload = Buffer.from(JSON.stringify({ model: MODEL, stream: false, temperature: 0, max_tokens: 200, messages }));
@@ -71,7 +72,7 @@ function chat(messages) {
  * the ids ordered by relevance. Returns an array of ids, or null on failure.
  */
 export async function rerank(query, candidates, topK = 5) {
-  if (!KEY || !ENABLED || !candidates || candidates.length === 0) return null;
+  if (!KEY || !ENABLED || deterministicEnabled() || !candidates || candidates.length === 0) return null;
   const list = candidates.map((c, i) => `[${i + 1}] (id:${c.id}) ${c.title}\n    ${String(c.snippet || "").replace(/\s+/g, " ").slice(0, 200)}`).join("\n");
   const sys = "You are a search reranker. Given a user query and a numbered list of notes, return the most relevant notes ordered best-first. Respond with ONLY a comma-separated list of the bracket numbers, e.g. 3,1,5. No prose.";
   const user = `Query: ${query}\n\nNotes:\n${list}\n\nReturn the top ${topK} bracket numbers, best first, comma-separated:`;

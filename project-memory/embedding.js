@@ -1,19 +1,20 @@
 /**
- * Embedding helper for 9router (OpenAI-compatible /v1/embeddings).
+ * Embedding helper for any OpenAI-compatible /v1/embeddings endpoint.
  * Degrades gracefully: returns null on any failure so callers fall back
  * to keyword search. Never throws.
  */
 import http from "http";
 import https from "https";
 import { URL } from "url";
+import { deterministicEnabled } from "./env.js";
 
-const BASE = process.env.LLM_BASE_URL || process.env.EMBED_URL || process.env.NINEROUTER_URL || "http://localhost:20128";
-const KEY = process.env.LLM_API_KEY || process.env.EMBED_KEY || process.env.NINEROUTER_KEY || "";
-const MODEL = process.env.EMBED_MODEL || "bm/baai/bge-m3";
+const BASE = process.env.MCP_EMBED_BASE_URL || process.env.MCP_LLM_BASE_URL || process.env.LLM_BASE_URL || process.env.EMBED_URL || process.env.NINEROUTER_URL || "http://localhost:20128";
+const KEY = process.env.MCP_EMBED_API_KEY || process.env.MCP_LLM_API_KEY || process.env.LLM_API_KEY || process.env.EMBED_KEY || process.env.NINEROUTER_KEY || "";
+const MODEL = process.env.MCP_EMBED_MODEL || process.env.EMBED_MODEL || "bm/baai/bge-m3";
 const TIMEOUT_MS = Number(process.env.EMBED_TIMEOUT_MS || 15000);
 
 export function embeddingConfig() {
-  return { base: BASE, model: MODEL, enabled: Boolean(KEY) };
+  return { base: BASE, model: MODEL, enabled: Boolean(KEY) && !deterministicEnabled(), deterministic: deterministicEnabled() };
 }
 
 function postJson(urlStr, payload) {
@@ -53,7 +54,7 @@ function postJson(urlStr, payload) {
 
 /** Returns array of vectors aligned to inputs, or null if unavailable. */
 export async function embed(inputs) {
-  if (!KEY) return null;
+  if (!KEY || deterministicEnabled()) return null;
   const arr = Array.isArray(inputs) ? inputs : [inputs];
   if (arr.length === 0) return [];
   const json = await postJson(BASE, { model: MODEL, input: arr });

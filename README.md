@@ -1,7 +1,9 @@
-# Codex Dev MCP Suite
+# Dev MCP Suite
 
 [![CI](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/codex-dev-mcp-suite.svg)](https://www.npmjs.com/package/codex-dev-mcp-suite)
+
+Published as `codex-dev-mcp-suite` for backward compatibility.
 
 Four local, file-based MCP servers for solo developers and vibecoders who keep
 losing context when sessions hit "input too long" / get compacted / restart.
@@ -9,7 +11,8 @@ Stop re-pasting context across sessions.
 
 All servers are **local, dependency-light (only the MCP SDK), and split storage
 per-project** by the working directory. Works with any MCP-capable client
-(Codex CLI, Claude Code, Cursor, Cline, etc.).
+(Codex CLI, Claude Code, Cursor, Cline, Gemini-compatible launchers, Hermes,
+or any stdio MCP host).
 
 ## The four servers
 
@@ -29,6 +32,13 @@ Recall auto-selects the best available mode:
 3. **keyword** — always-available offline fallback
 
 All network features degrade gracefully: no endpoint = keyword mode, never an error.
+Use the neutral `MCP_*` environment variables for new installs; legacy
+`NINEROUTER_*` and `LLM_*` variables are still supported. See
+[`docs/configuration.md`](docs/configuration.md).
+
+Need hard local-only behavior? Set `MCP_DETERMINISTIC_FALLBACK=true` to disable
+embeddings/rerank even if model keys are present; results are labeled
+`[deterministic]`.
 
 ## Install
 
@@ -71,6 +81,12 @@ for s in project-memory checkpoint context-pack devjournal; do (cd "$s" && npm i
 
 ### Register with your MCP client
 
+Client-specific examples:
+
+- [Codex CLI](docs/clients/codex.md)
+- [Claude Code](docs/clients/claude-code.md)
+- [Generic MCP JSON](docs/clients/generic-mcp.md)
+
 **Codex CLI** (`~/.codex/config.toml`):
 
 ```toml
@@ -79,10 +95,10 @@ command = "node"
 args = ["/abs/path/codex-dev-mcp-suite/project-memory/server.js"]
 [mcp_servers.project-memory.env]
 MEMORY_VAULT_DIR = "~/.codex/memories/vault"
-# optional recall upgrades (see .env.example)
-# LLM_BASE_URL = "http://localhost:11434/v1"   # any OpenAI-compatible endpoint
-# LLM_API_KEY = "..."
-# RERANK_MODEL = "llama3.1:8b"
+# optional recall upgrades (see .env.example and docs/configuration.md)
+# MCP_LLM_BASE_URL = "http://localhost:11434/v1"   # any OpenAI-compatible endpoint
+# MCP_LLM_API_KEY = "..."
+# MCP_RERANK_MODEL = "llama3.1:8b"
 
 [mcp_servers.checkpoint]
 command = "node"
@@ -99,8 +115,10 @@ args = ["/abs/path/codex-dev-mcp-suite/devjournal/server.js"]
 JOURNAL_DIR = "~/.codex/memories/journal"
 ```
 
-**Claude Code / Cursor / Cline** (`mcpServers` JSON): same idea — `command: "node"`,
-`args: ["/abs/path/<server>/server.js"]`, optional `env`.
+**Claude Code / Cursor / Cline / other MCP clients** (`mcpServers` JSON): same
+idea — use the npm bin commands (`project-memory-mcp`, `devjournal-mcp`,
+`checkpoint-mcp`, `context-pack-mcp`) or `node /abs/path/<server>/server.js`,
+with optional `env`.
 
 ## Daily workflow
 
@@ -129,8 +147,10 @@ cd project-memory && npm test
 
 ## Privacy
 
-Everything is stored as plain files on your machine. No data leaves your
-computer unless you explicitly configure an embeddings/rerank endpoint. Your
+Local-first by default: no hosted backend, no built-in telemetry, no project
+account system. Everything is stored as files on your machine. No data leaves
+your machine unless you explicitly configure an external model/API endpoint for
+rerank or embeddings. See [privacy and data flow](docs/privacy.md). Your
 personal vault/journal/checkpoints are gitignored.
 
 ## License
