@@ -1,14 +1,14 @@
 /**
  * LLM reranker via any OpenAI-compatible /v1/chat/completions model.
- * Used when embeddings are unavailable: keyword prefilter -> LLM picks the
- * most relevant candidates. Degrades gracefully: returns null on any failure
- * so callers fall back to keyword ordering. Never throws.
+ * Tries provider chain slots in order, skipping any currently cooling down
+ * after a recent failure. Degrades gracefully: returns null on any failure so
+ * callers fall back to keyword ordering. Never throws. Never logs keys/bodies.
  */
 import http from "http";
 import https from "https";
 import { URL } from "url";
 import { deterministicEnabled } from "./env.js";
-import { providerChainConfig } from "./provider-chain.js";
+import { providerChainConfig, isCoolingDown, recordOutcome } from "./provider-chain.js";
 
 const TIMEOUT_MS = Number(process.env.RERANK_TIMEOUT_MS || 30000);
 const ENABLED = process.env.RERANK_ENABLED !== "0";
@@ -25,10 +25,19 @@ export function rerankConfig() {
   };
 }
 
+function providerKey(provider) {
+  return `${provider.label}|${provider.base}|${provider.model}`;
+}
+
+/**
+ * Resolves { content, retryable }. retryable=true means try the next provider
+ * (timeout, network error, 429, or 5xx). retryable=false with null content
+ * means a definitive non-retryable response (e.g. 4xx auth).
+ */
 function chatWithProvider(provider, messages) {
   return new Promise((resolve) => {
     let u;
-    try { u = new URL("/v1/chat/completions", provider.base); } catch { return resolve(null); }
+    try { u = new URL("/v1/chat/completions", provider.base); } catch { return resolve({ content: null, retryable: false }); }
     const payload = Buffer.from(JSON.stringify({ model: provider.model, stream: false, temperature: 0, max_tokens: 200, messages }));
     const lib = u.protocol === "https:" ? https : http;
     const req = lib.request(
@@ -44,10 +53,14 @@ function chatWithProvider(provider, messages) {
         let body = "";
         res.on("data", (c) => (body += c));
         res.on("end", () => {
-          if (res.statusCode !== 200) return resolve(null);
+          const status = res.statusCode || 0;
+          if (status !== 200) {
+            const retryable = status === 429 || status >= 500;
+            return resolve({ content: null, retryable });
+          }
           try {
             const j = JSON.parse(body);
-            return resolve(j?.choices?.[0]?.message?.content ?? null);
+            return resolve({ content: j?.choices?.[0]?.message?.content ?? null, retryable: false });
           } catch { /* maybe SSE */ }
           try {
             let acc = "";
@@ -59,13 +72,13 @@ function chatWithProvider(provider, messages) {
               const j = JSON.parse(d);
               acc += j?.choices?.[0]?.delta?.content || j?.choices?.[0]?.message?.content || "";
             }
-            return resolve(acc || null);
-          } catch { return resolve(null); }
+            return resolve({ content: acc || null, retryable: false });
+          } catch { return resolve({ content: null, retryable: true }); }
         });
       }
     );
-    req.on("error", () => resolve(null));
-    req.on("timeout", () => { req.destroy(); resolve(null); });
+    req.on("error", () => resolve({ content: null, retryable: true }));
+    req.on("timeout", () => { req.destroy(); resolve({ content: null, retryable: true }); });
     req.write(payload);
     req.end();
   });
@@ -75,8 +88,11 @@ async function chat(messages) {
   if (!ENABLED || deterministicEnabled()) return null;
   const { providers } = providerChainConfig();
   for (const provider of providers) {
-    const out = await chatWithProvider(provider, messages);
-    if (out) return out;
+    const key = providerKey(provider);
+    if (isCoolingDown(key)) continue;
+    const { content, retryable } = await chatWithProvider(provider, messages);
+    if (content) { recordOutcome(key, true); return content; }
+    if (retryable) recordOutcome(key, false);
   }
   return null;
 }

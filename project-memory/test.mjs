@@ -1,9 +1,11 @@
 import { McpClient, describe, it, assert, assertIncludes, run, tmpDir, rmrf } from "../_testkit/harness.mjs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { spawnSync } from "child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SERVER = path.join(__dirname, "server.js");
+const BIN = path.join(__dirname, "..", "bin", "project-memory.mjs");
 const VAULT = tmpDir("pm-");
 const DEMO = "/tmp/pm-demo-project";
 
@@ -102,6 +104,47 @@ describe("project-memory", () => {
     process.env.MCP_DETERMINISTIC_FALLBACK = "true";
     assert(mod.providerChainConfig().enabled === false, "deterministic should disable providers");
     process.env = old;
+  });
+
+  it("diagnostics flags incomplete slot and redacts keys", async () => {
+    const old = { ...process.env };
+    process.env = { ...old };
+    for (const k of Object.keys(process.env)) if (k.startsWith("MCP_PROVIDER_") || k.startsWith("MCP_RERANK_") || k.startsWith("MCP_LLM_") || k === "RERANK_ENABLED" || k === "MCP_DETERMINISTIC_FALLBACK") delete process.env[k];
+    process.env.MCP_PROVIDER_PRIMARY = "groq";
+    process.env.MCP_PROVIDER_PRIMARY_BASE_URL = "https://api.groq.com/openai/v1";
+    process.env.MCP_PROVIDER_PRIMARY_API_KEY = "supersecretvalue";
+    process.env.MCP_PROVIDER_PRIMARY_MODEL = "llama-3.3-70b-versatile";
+    process.env.MCP_PROVIDER_CHAIN2 = "incomplete";
+    process.env.MCP_PROVIDER_CHAIN2_BASE_URL = "https://bad.example/v1";
+    const { providerChainDiagnostics } = await import(`./provider-chain.js?diag-test=${Date.now()}`);
+    const d = providerChainDiagnostics();
+    assert(d.providers.length === 1, "only complete provider should be active");
+    assert(d.providers[0].apiKey === "set (16 chars)", "api key should be redacted");
+    assert(JSON.stringify(d).includes("supersecretvalue") === false, "diagnostics must not contain raw key");
+    assert(d.issues.some((i) => i.prefix === "MCP_PROVIDER_CHAIN2"), "incomplete slot should be reported");
+    process.env = old;
+  });
+
+  it("cooldown helpers gate failing providers", async () => {
+    const { recordOutcome, isCoolingDown, _resetCooldowns } = await import(`./provider-chain.js?cool-test=${Date.now()}`);
+    _resetCooldowns();
+    const key = "groq|https://api.groq.com/openai/v1|m";
+    const t0 = 1_000_000;
+    assert(isCoolingDown(key, t0) === false, "fresh provider should not be cooling down");
+    recordOutcome(key, false, t0);
+    assert(isCoolingDown(key, t0 + 1000) === true, "failed provider should cool down");
+    assert(isCoolingDown(key, t0 + 60001) === false, "cooldown should expire after window");
+    recordOutcome(key, false, t0 + 60002);
+    recordOutcome(key, true, t0 + 60003);
+    assert(isCoolingDown(key, t0 + 60004) === false, "success should clear cooldown");
+  });
+
+  it("bin --version prints version and --doctor redacts keys", () => {
+    const ver = spawnSync("node", [BIN, "--version"], { encoding: "utf8" });
+    assert(/^\d+\.\d+\.\d+/.test(ver.stdout.trim()), `unexpected version output: ${ver.stdout}`);
+    const doc = spawnSync("node", [BIN, "--doctor"], { encoding: "utf8", env: { ...process.env, MCP_LLM_API_KEY: "supersecretvalue" } });
+    assert(doc.stdout.includes("keys redacted"), "doctor should mark keys redacted");
+    assert(doc.stdout.includes("supersecretvalue") === false, "doctor must not print raw key");
   });
 
   it("lists expected tools", async () => {
