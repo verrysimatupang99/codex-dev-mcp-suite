@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.4.0 - 2026-06-17
+
+### Added
+- **`provider-smoke` CLI** (`bin/provider-smoke.mjs`): probe every configured LLM provider (chat + embeddings) and print a matrix of latency / status / sample. Useful after adding a new API key or comparing providers.
+  - Usage: `npx -y -p codex-dev-mcp-suite provider-smoke` (or globally `provider-smoke`)
+  - Flags: `--json`, `--markdown`, `--save-md <path>`, `--chat-only`, `--embed-only`, `--env-file <path>`, `--only a,b,c`, `--timeout <ms>`, `--help`, `--version`
+  - Auto-detects providers from `MCP_PROVIDER_*` slots + named env (`GROQ_*`, `CEREBRAS_*`, `MISTRAL_*`, `OPENROUTER_*`, `OPENAI_*`, `OLLAMA_*`, `ANTHROPIC_*`, `GEMINI_*`, `COHERE_*`, `VOYAGE_*`, `CLOUDFLARE_*`) + `MCP_LLM_BASE_URL` / `NINEROUTER_URL` fallback.
+  - Pure-function library at `lib/provider-smoke.js` (18 offline tests).
+  - `KNOWN_PROVIDERS` registry covers 11 providers with `supportsChat` / `supportsEmbed` flags + `endpoint: "openai-compatible" | "cloudflare"`.
+  - Cloudflare embed-only models (`@cf/baai/*`, `@cf/google/embedding*`, etc.) are detected and the chat probe is skipped with a clear annotation.
+- **Cloudflare Workers AI support** for embeddings: drop-in alternative when 9router/OpenAI are unavailable. Set `MCP_EMBED_BASE_URL=https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/ai/run/`, `MCP_EMBED_API_KEY=<token>`, `MCP_EMBED_MODEL=@cf/baai/bge-base-en-v1.5`.
+  - Cloudflare's REST API (non-OpenAI-compatible, model-in-path) is auto-detected by URL pattern and dispatched to a separate code path in `project-memory/embedding.js`.
+  - New `isCloudflareURL()` + `httpPostJson()` helpers; `embedCloudflare()` handles `{text: [...]}` body and `{result: {data: [[...]]}}` response.
+  - `embeddingConfig().mode` and `recallMode()` helpers expose what retrieval mode is active (`semantic` / `keyword` / `deterministic`).
+- **`memory_recall` mode arg** (default `"auto"`): explicit control over fallback behavior. `mode: "semantic"` requires embedding (returns `isError: true` if unavailable), `mode: "keyword"` skips embedding entirely.
+- **Recall output annotation** now shows `[semantic+rerank]` / `[keyword+rerank]` when LLM rerank is active, making the active mode fully transparent.
+- **Top-level test runner hook** (added in 1.3.0, expanded in 1.4.0): `tests/*.test.mjs` are auto-picked-up by `node run-tests.mjs`.
+
+### Tests
+- 85 tests pass (was 60 in v1.3.0): 26 project-memory + 6 checkpoint + 6 context-pack + 11 devjournal + 18 provider-smoke + 9 prune + 9 stats.
+- New fallback tests: `mode=keyword` skips semantic, `mode=semantic` without embed key returns isError, default mode=auto, no `+rerank` suffix when rerank disabled.
+
+### Docs
+- `docs/providers.md` rewritten: 11-provider matrix, Cloudflare setup caveat, Ollama resource cost, "no API key" graceful degradation notes.
+- `README.md` updated: "Memory Recall Modes" section, Cloudflare + Gemini setup examples, 4-mode annotation examples.
+- `.env.example` updated: copy-pasteable config blocks for Cloudflare Workers AI and Google Gemini.
+
+
+
 ## 1.3.0 - 2026-06-17
 
 ### Added
@@ -8,6 +37,14 @@
   - Flags: `--root <path>`, `--json`, `--top N`, `--help`, `--version`
   - Pure-function library at `lib/stats.js` (no MCP / no stdio); tested offline.
 - New top-level test runner hook: `tests/*.test.mjs` are auto-picked-up by `node run-tests.mjs`.
+- New `provider-smoke` CLI: probe every configured LLM provider (chat + embeddings) and print a matrix of latency / status / sample. Useful after adding a new API key or to compare providers.
+  - Usage: `npx -y -p codex-dev-mcp-suite provider-smoke`
+  - Flags: `--json`, `--markdown`, `--save-md <path>`, `--chat-only`, `--embed-only`, `--env-file <path>`, `--timeout <ms>`
+  - Detects providers from `MCP_PROVIDER_*` slots + named env (`GROQ_*`, `CEREBRAS_*`, `MISTRAL_*`, `OPENROUTER_*`, `OPENAI_*`, `OLLAMA_*`, `ANTHROPIC_*`, `GEMINI_*`, `COHERE_*`) + `MCP_LLM_BASE_URL` / `NINEROUTER_URL` fallback.
+  - Pure-function library at `lib/provider-smoke.js`; tested offline.
+- New docs page `docs/providers.md` — auto-generated smoke matrix from latest run.
+
+
 
 
 
@@ -20,6 +57,12 @@
   - Safety: refuses to delete any slug that does not start with `tmp.`.
 - New MCP tool `memory_stats` on the project-memory server: returns the same summary as the `stats` CLI. Useful for in-session introspection from an MCP client.
   - Args: `root?`, `top?` (default 10), `json?` (default false).
+
+
+
+### Added
+- **Cloudflare Workers AI support** for embeddings and chat: drop-in alternative when 9router/OpenAI are unavailable. Set `MCP_EMBED_BASE_URL=https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/ai/run/`, `MCP_EMBED_API_KEY=<token>`, `MCP_EMBED_MODEL=@cf/baai/bge-base-en-v1.5`. Cloudflare's REST API (non-OpenAI-compatible) is auto-detected by URL pattern and dispatched to a separate code path in `project-memory/embedding.js`. Includes `isCloudflareURL()` detection + `endpoint: "cloudflare"` field in provider matrix.
+- `provider-smoke` CLI: probe Cloudflare alongside OpenAI-compatible providers. Cloudflare chat returns 400 for embed-only models (expected — they don't support chat).
 
 ## 1.2.0 - 2026-06-15
 
