@@ -186,6 +186,69 @@ node backfill-sessions-v2.mjs --dry --min-prompts 2     # preview
 node backfill-sessions-v2.mjs --min-prompts 2           # import
 ```
 
+## Stats CLI
+
+A read-only summary of your local memory storage — totals, top projects,
+recent activity, and temp-slug cleanup candidates.
+
+```bash
+npx -y -p codex-dev-mcp-suite stats             # human-readable
+npx -y -p codex-dev-mcp-suite stats --json      # machine-readable
+npx -y -p codex-dev-mcp-suite stats --root /tmp/mem   # different root
+npx -y -p codex-dev-mcp-suite stats --top 5     # trim top lists
+```
+
+Example output:
+
+```
+Dev MCP Suite — stats
+======================
+Storage root: /home/you/.codex/memories
+
+Totals
+------
+  Notes:           89
+  Journal projects:19
+  Checkpoints:     1
+  Distinct projects: 25
+
+Top projects by notes (top 10)
+------------------------
+    24  mrtrickster99-fd1ff0fa
+    14  Coding-17e063ef
+    ...
+
+Temp/cleanup candidates (2)
+------------------------
+  tmp.itbtDn9eB3-b62798fd
+  tmp.iHqM2Uh5K2-8d3660a2
+```
+
+The CLI is a thin wrapper around `lib/stats.js`, which is also importable
+directly from your own scripts. The default storage root is
+`~/.codex/memories`, but `--root` (or the existing `MEMORY_VAULT_DIR` /
+`JOURNAL_DIR` / `CHECKPOINT_DIR` env vars) override it.
+
+
+## Prune CLI
+
+Remove temp project slugs (prefix `tmp.`) from vault / journal / checkpoints.
+Default is DRY-RUN — nothing is deleted without `--yes`.
+
+```bash
+npx -y -p codex-dev-mcp-suite prune           # dry-run report
+npx -y -p codex-dev-mcp-suite prune --yes     # actually delete
+npx -y -p codex-dev-mcp-suite prune --json    # machine-readable
+npx -y -p codex-dev-mcp-suite prune --root /tmp/mem   # different root
+```
+
+Safety: refuses to delete any slug that does not start with `tmp.`. Useful
+right after heavy refactors or after imports that left tmp scratch dirs.
+
+For in-session use from an MCP client, the project-memory server exposes a
+`memory_stats` tool that returns the same summary text (or JSON) as the `stats`
+CLI above.
+
 ## Tests
 
 ```bash

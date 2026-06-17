@@ -1,32 +1,44 @@
 #!/usr/bin/env node
 /**
- * Runs every server's test.mjs and prints a combined summary.
- * Usage: node run-tests.mjs   (from ~/.codex/mcp-servers)
+ * Runs every server's test.mjs and any top-level tests/*.test.mjs,
+ * then prints a combined summary. Usage: node run-tests.mjs
  */
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SERVERS = ["project-memory", "checkpoint", "context-pack", "devjournal"];
+const EXTRA_TESTS = fs.existsSync("tests")
+  ? fs.readdirSync("tests").filter((f) => f.endsWith(".test.mjs")).map((f) => `tests/${f}`)
+  : [];
 
-function runOne(name) {
+/** Run a single test file by absolute path. */
+function runFile(absPath) {
   return new Promise((resolve) => {
-    const test = path.join(__dirname, name, "test.mjs");
-    const proc = spawn("node", [test], { stdio: ["ignore", "pipe", "pipe"] });
+    const proc = spawn("node", [absPath], { stdio: ["ignore", "pipe", "pipe"] });
     let out = "";
     proc.stdout.on("data", (d) => (out += d));
     proc.stderr.on("data", (d) => (out += d));
-    proc.on("close", (code) => resolve({ name, code, out }));
+    proc.on("close", (code) => resolve({ name: path.basename(path.dirname(absPath)) || absPath, code, out }));
   });
 }
 
 const results = [];
+
 for (const s of SERVERS) {
   console.log(`\n=== ${s} ===`);
-  const r = await runOne(s);
+  const r = await runFile(path.join(__dirname, s, "test.mjs"));
   process.stdout.write(r.out);
-  results.push(r);
+  results.push({ ...r, name: s });
+}
+
+for (const t of EXTRA_TESTS) {
+  console.log(`\n=== ${t} ===`);
+  const r = await runFile(path.join(__dirname, t));
+  process.stdout.write(r.out);
+  results.push({ ...r, name: t });
 }
 
 console.log("\n================ SUMMARY ================");
@@ -36,7 +48,7 @@ for (const r of results) {
   if (!ok) anyFail = true;
   const m = r.out.match(/(\d+) passed, (\d+) failed/);
   const stat = m ? `${m[1]} passed, ${m[2]} failed` : (ok ? "ok" : "FAILED");
-  console.log(`  ${ok ? "✓" : "✗"} ${r.name.padEnd(16)} ${stat}`);
+  console.log(`  ${ok ? "✓" : "✗"} ${r.name.padEnd(28)} ${stat}`);
 }
 console.log("========================================");
 process.exit(anyFail ? 1 : 0);
