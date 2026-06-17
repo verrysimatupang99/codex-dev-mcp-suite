@@ -1,5 +1,6 @@
-import { McpClient, describe, it, assert, assertIncludes, run, tmpDir, rmrf } from "../_testkit/harness.mjs";
+import { McpClient, describe, it, assert, assertEqual, assertIncludes, run, tmpDir, rmrf } from "../_testkit/harness.mjs";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { spawnSync } from "child_process";
 
@@ -149,8 +150,30 @@ describe("project-memory", () => {
 
   it("lists expected tools", async () => {
     const tools = await client.listTools();
-    for (const t of ["memory_save", "memory_recall", "memory_list", "memory_get", "memory_delete", "memory_reindex"])
+    for (const t of ["memory_save", "memory_recall", "memory_list", "memory_get", "memory_delete", "memory_reindex", "memory_stats"])
       assert(tools.includes(t), `missing ${t}`);
+  });
+
+  it("memory_stats returns human text by default", async () => {
+    // point at a custom tmp root so test is hermetic
+    const tmpRoot = tmpDir("pm-stats-");
+    fs.mkdirSync(path.join(tmpRoot, "vault", "demo", "notes"), { recursive: true });
+    fs.writeFileSync(path.join(tmpRoot, "vault", "demo", "notes", "n1.md"), "# hi");
+    const r = await client.callTool("memory_stats", { root: tmpRoot });
+    assertIncludes(r.text, "Dev MCP Suite");
+    assertIncludes(r.text, "demo");
+    rmrf(tmpRoot);
+  });
+
+  it("memory_stats returns JSON when json=true", async () => {
+    const tmpRoot = tmpDir("pm-stats-json-");
+    fs.mkdirSync(path.join(tmpRoot, "vault", "demo2", "notes"), { recursive: true });
+    fs.writeFileSync(path.join(tmpRoot, "vault", "demo2", "notes", "n.md"), "# hi");
+    const r = await client.callTool("memory_stats", { root: tmpRoot, json: true });
+    const j = JSON.parse(r.text);
+    assert(j.totals, "expected totals in JSON output");
+    assertEqual(j.totals.notes, 1);
+    rmrf(tmpRoot);
   });
 
   it("saves a note (keyword mode without embeddings)", async () => {

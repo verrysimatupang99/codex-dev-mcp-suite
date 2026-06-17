@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.3.0 - 2026-06-17
+
+### Added
+- New `stats` CLI: summarize local memory storage across vault / journal / checkpoints. Shows totals, top projects by notes, most recent activity, and temp-slug cleanup candidates.
+  - Usage: `npx -y -p codex-dev-mcp-suite stats` (or globally `stats`)
+  - Flags: `--root <path>`, `--json`, `--top N`, `--help`, `--version`
+  - Pure-function library at `lib/stats.js` (no MCP / no stdio); tested offline.
+- New top-level test runner hook: `tests/*.test.mjs` are auto-picked-up by `node run-tests.mjs`.
+
+
+
+
+### Added
+- New `prune` CLI: remove temp project slugs (prefix `tmp.`) from vault, journal, and checkpoints. Default is DRY-RUN — nothing is deleted without `--yes`.
+  - Usage: `npx -y -p codex-dev-mcp-suite prune` (or globally `prune`)
+  - Flags: `--root <path>`, `--yes`, `--json`, `--help`, `--version`
+  - Pure-function library at `lib/prune.js`; tested offline.
+  - Safety: refuses to delete any slug that does not start with `tmp.`.
+- New MCP tool `memory_stats` on the project-memory server: returns the same summary as the `stats` CLI. Useful for in-session introspection from an MCP client.
+  - Args: `root?`, `top?` (default 10), `json?` (default false).
+
 ## 1.2.0 - 2026-06-15
 
 ### Added

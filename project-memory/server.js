@@ -29,6 +29,7 @@ import crypto from "crypto";
 import { embed, embedOne, cosine, embeddingConfig } from "./embedding.js";
 import { rerank, rerankConfig } from "./rerank.js";
 import { deterministicEnabled } from "./env.js";
+import { computeStats, formatText, formatJson } from "../lib/stats.js";
 
 const VAULT_ROOT =
   process.env.MEMORY_VAULT_DIR ||
@@ -220,6 +221,18 @@ class ProjectMemoryServer {
             },
           },
         },
+        {
+          name: "memory_stats",
+          description: "Summarize local memory storage across vault / journal / checkpoints: totals, top projects, recent activity, and temp-slug cleanup candidates. Returns the same text as the `stats` CLI.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              root: { type: "string", description: "Storage root (default: ~/.codex/memories or first env var of MEMORY_VAULT_DIR / JOURNAL_DIR / CHECKPOINT_DIR)" },
+              top: { type: "number", description: "How many entries in top-project / recent-activity lists (default 10)", default: 10 },
+              json: { type: "boolean", description: "Return machine-readable JSON instead of human text", default: false },
+            },
+          },
+        },
       ],
     }));
 
@@ -233,6 +246,7 @@ class ProjectMemoryServer {
           case "memory_get": return await this.get(args || {});
           case "memory_delete": return await this.del(args || {});
           case "memory_reindex": return await this.reindex(args || {});
+          case "memory_stats": return await this.stats(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
@@ -437,6 +451,21 @@ class ProjectMemoryServer {
     }
     await this.saveIndex(p, index);
     return { content: [{ type: "text", text: `Reindex ${p.slug}: embedded ${done}, failed ${failed} (embeddings ${embeddingConfig().enabled ? "configured" : "not configured"}). ${failed ? "Failures usually mean the embedding model is unavailable right now." : ""}` }] };
+  }
+
+  async stats({ root: explicitRoot, top = 10, json = false } = {}) {
+    const root = explicitRoot
+      ? path.resolve(explicitRoot)
+      : (process.env.MEMORY_VAULT_DIR
+          ? path.dirname(process.env.MEMORY_VAULT_DIR)
+          : process.env.JOURNAL_DIR
+            ? path.dirname(process.env.JOURNAL_DIR)
+            : process.env.CHECKPOINT_DIR
+              ? path.dirname(process.env.CHECKPOINT_DIR)
+              : path.join(os.homedir(), ".codex", "memories"));
+    const stats = computeStats({ root, topLimit: top });
+    const text = json ? formatJson(stats) : formatText(stats);
+    return { content: [{ type: "text", text }] };
   }
 
   async run() {
