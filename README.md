@@ -168,6 +168,30 @@ idea — use the npm bin commands (`project-memory-mcp`, `devjournal-mcp`,
 `checkpoint-mcp`, `context-pack-mcp`) or `node /abs/path/<server>/server.js`,
 with optional `env`.
 
+## Memory Recall Modes
+
+`memory_recall` supports a `mode` arg (default `"auto"`) that controls fallback behavior:
+
+| Mode | Behavior |
+|---|---|
+| `auto` (default) | Smart: try semantic → keyword → LLM rerank |
+| `semantic` | Require embedding. Returns `isError: true` if no embed key configured |
+| `keyword` | Skip embedding entirely (faster, pure keyword scoring) |
+
+The recall output annotates the active mode for transparency:
+
+```
+Recall for "how do users sign in" in my-project [semantic+rerank]:
+### JWT login flow (id:..., sim:0.603, ...)
+```
+
+The `+rerank` suffix is appended when LLM rerank is active (MCP_RERANK_ENABLED + key).
+Without embeddings, recall falls back to `[keyword]` or `[keyword+rerank]`.
+With `MCP_DETERMINISTIC_FALLBACK=true`, the mode is always `[deterministic]`.
+
+This means you can run codex-dev-mcp-suite with **zero API keys configured** —
+`memory_recall` still works via keyword scoring, just no semantic similarity.
+
 ## Daily workflow
 
 - Session start: `pack_overview` + `journal_resume` + `memory_recall "<topic>"`
@@ -229,6 +253,50 @@ directly from your own scripts. The default storage root is
 `~/.codex/memories`, but `--root` (or the existing `MEMORY_VAULT_DIR` /
 `JOURNAL_DIR` / `CHECKPOINT_DIR` env vars) override it.
 
+
+## Provider Smoke CLI
+
+Verify every configured LLM provider (chat + embeddings) with one command.
+Useful after adding a new API key, or when comparing provider latency.
+
+```bash
+npx -y -p codex-dev-mcp-suite provider-smoke                          # uses process.env
+npx -y -p codex-dev-mcp-suite provider-smoke --env-file ~/secrets.env  # separate secrets file
+npx -y -p codex-dev-mcp-suite provider-smoke --markdown --save-md docs/providers.md
+```
+
+Auto-detects providers from these env vars (highest precedence first):
+
+- **Numbered slots**: `MCP_PROVIDER_PRIMARY` / `_CHAIN2` / `_CHAIN3` / ...
+- **Named env**: `GROQ_*`, `CEREBRAS_*`, `MISTRAL_*`, `OPENROUTER_*`, `OPENAI_*`, `GEMINI_*`, `COHERE_*`, `VOYAGE_*`, `OLLAMA_*`, `ANTHROPIC_*`
+- **Catch-all**: `MCP_LLM_BASE_URL` / `MCP_RERANK_BASE_URL` / `MCP_EMBED_BASE_URL` / `NINEROUTER_URL` / `LLM_BASE_URL` (any OpenAI-compatible endpoint)
+
+For each detected provider, runs:
+- **chat probe** (`/v1/chat/completions`) — if the provider supports it
+- **embed probe** (`/v1/embeddings`) — if the provider supports it
+
+**Inference-only providers** (Groq, Cerebras, Anthropic) skip the embed probe automatically.
+**Non-OpenAI-compatible providers** (Cloudflare Workers AI) require a custom code path in
+`project-memory/embedding.js` — see [docs/providers.md](docs/providers.md).
+
+**No provider assumption is baked in**: the tool only probes what's in your env. Zero-config users
+get an empty matrix; pass `--env-file` to point at a secrets file.
+
+Chat-only providers (Groq, Cerebras) skip the embeddings probe automatically
+— they don't expose `/v1/embeddings`. Embedding-capable providers (Mistral,
+OpenRouter, OpenAI, Ollama, Gemini, Cohere) run both probes.
+
+Example output (Groq + Cerebras, both configured):
+
+```
+[groq]
+  ✓ chat       200 310ms  "OK"
+
+[cerebras]
+  ✓ chat       200 476ms
+```
+
+See [`docs/providers.md`](docs/providers.md) for a saved smoke matrix.
 
 ## Prune CLI
 

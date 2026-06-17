@@ -163,7 +163,7 @@ class ProjectMemoryServer {
         {
           name: "memory_recall",
           description:
-            "Retrieve the most relevant saved notes for a query using the keyword index. Call this at the start of a new session instead of re-pasting context.",
+            "Retrieve the most relevant saved notes for a query. Falls back gracefully: semantic -> keyword -> LLM rerank. Set mode to control behavior: 'auto' (default), 'semantic' (require embedding), 'keyword' (skip embedding).",
           inputSchema: {
             type: "object",
             properties: {
@@ -171,6 +171,7 @@ class ProjectMemoryServer {
               dir: { type: "string", description: "Project directory (defaults to CWD)" },
               limit: { type: "number", description: "Max notes to return", default: 5 },
               full: { type: "boolean", description: "Return full bodies instead of excerpts", default: false },
+              mode: { type: "string", enum: ["auto", "semantic", "keyword"], default: "auto", description: "Retrieval mode: 'auto' (default, smart fallback), 'semantic' (require embedding), 'keyword' (skip embedding)" },
             },
             required: ["query"],
           },
@@ -316,7 +317,7 @@ class ProjectMemoryServer {
     return { content: [{ type: "text", text: `Saved note ${id} → ${p.slug}\nFile: ${file}\nKeywords indexed: ${keywords.length}${embedded ? " (semantic embedding stored)" : " (keyword-only; embeddings unavailable)"}` }] };
   }
 
-  async recall({ query, dir, limit: lim = 5, full = false }) {
+  async recall({ query, dir, limit: lim = 5, full = false, mode: requestedMode = "auto" }) {
     query = limit(query, "query", 2000);
     const p = this.paths(dir);
     const index = await this.loadIndex(p);
@@ -333,9 +334,16 @@ class ProjectMemoryServer {
       return score;
     };
 
+    // Tier 2.1: respect requested mode. "auto" = smart fallback.
     let mode = deterministicEnabled() ? "deterministic" : "keyword";
-    const qVec = deterministicEnabled() ? null : await embedOne(query);
+    const useEmbed = requestedMode !== "keyword" && !deterministicEnabled();
+    const qVec = useEmbed ? await embedOne(query) : null;
     const haveEmb = qVec && notes.some((n) => Array.isArray(n.embedding));
+
+    // Tier 2.1: "semantic" requested but unavailable -> error
+    if (requestedMode === "semantic" && !haveEmb) {
+      return { content: [{ type: "text", text: `memory_recall(mode=semantic) requested but no embeddings available. Set MCP_EMBED_API_KEY + MCP_EMBED_MODEL, or omit mode for keyword fallback.` }], isError: true };
+    }
 
     let scored;
     if (haveEmb) {
@@ -395,7 +403,12 @@ class ProjectMemoryServer {
       const tag = mode === "semantic" ? `sim:${(sim ?? 0).toFixed(3)}` : (mode === "rerank" ? "llm-ranked" : `score:${score}`);
       blocks.push(`### ${n.title}  (id:${n.id}, ${tag}, ${n.created})\n${text}`);
     }
-    return { content: [{ type: "text", text: `Recall for "${query}" in ${p.slug} [${mode}]:\n\n${blocks.join("\n\n---\n\n")}` }] };
+    // Tier 2.2: annotate mode with rerank indicator
+    const isReranked = rerankConfig().enabled && blocks.length > 1;
+    const displayMode = mode === "semantic" && isReranked ? "semantic+rerank"
+      : mode === "keyword" && isReranked ? "keyword+rerank"
+      : mode;
+    return { content: [{ type: "text", text: `Recall for "${query}" in ${p.slug} [${displayMode}]:\n\n${blocks.join("\n\n---\n\n")}` }] };
   }
 
   async list({ dir, limit: lim = 20 }) {

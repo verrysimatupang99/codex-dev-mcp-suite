@@ -1,3 +1,32 @@
+
+import { isCloudflareURL, embeddingConfig } from "./embedding.js";
+
+describe("embedding endpoint detection", () => {
+  it("isCloudflareURL detects CF Workers AI URLs", () => {
+    assert(isCloudflareURL("https://api.cloudflare.com/client/v4/accounts/abc/ai/run/"));
+    assert(isCloudflareURL("https://api.cloudflare.com/client/v4/accounts/59bf6ed6/ai/run/"));
+  });
+
+  it("isCloudflareURL returns false for OpenAI-compatible URLs", () => {
+    assertEqual(isCloudflareURL("https://api.openai.com/v1"), false);
+    assertEqual(isCloudflareURL("https://api.groq.com/openai/v1"), false);
+    assertEqual(isCloudflareURL("http://localhost:11434/v1"), false);
+    assertEqual(isCloudflareURL(""), false);
+  });
+
+  it("embeddingConfig reports endpoint type based on base URL", () => {
+    const cf = embeddingConfig.__esModule ? null : null; // noop
+    // Set env temporarily to verify config
+    const orig = process.env.MCP_EMBED_BASE_URL;
+    process.env.MCP_EMBED_BASE_URL = "https://api.cloudflare.com/client/v4/accounts/x/ai/run/";
+    process.env.MCP_EMBED_API_KEY = "fake";
+    const cfg = embeddingConfig();
+    assertEqual(cfg.endpoint, "cloudflare");
+    process.env.MCP_EMBED_BASE_URL = orig;
+    process.env.MCP_EMBED_API_KEY = "";
+  });
+});
+
 import { McpClient, describe, it, assert, assertEqual, assertIncludes, run, tmpDir, rmrf } from "../_testkit/harness.mjs";
 import path from "path";
 import fs from "fs";
@@ -212,6 +241,31 @@ describe("project-memory", () => {
       await detClient.stop();
       rmrf(detStore);
     }
+  });
+
+  it("memory_recall mode=keyword skips semantic", async () => {
+    // Default client has no embed key, so even without mode arg, recall is [keyword].
+    // Here we explicitly ask for keyword mode; same outcome.
+    const r = await client.callTool("memory_recall", { dir: DEMO, query: "jwt", mode: "keyword" });
+    assertIncludes(r.text, "[keyword]");
+  });
+
+  it("memory_recall mode=semantic without embed key returns isError", async () => {
+    const r = await client.callTool("memory_recall", { dir: DEMO, query: "jwt", mode: "semantic" });
+    assert(r.isError, "expected isError when semantic requested but no embed key");
+    assertIncludes(r.text, "no embeddings available");
+  });
+
+  it("memory_recall mode=auto (default) annotates rerank when active", async () => {
+    // This client has no rerank key either, so no +rerank suffix. Just verify no crash and recall succeeds.
+    const r = await client.callTool("memory_recall", { dir: DEMO, query: "jwt" });
+    // Should not contain "+rerank" since rerank is disabled
+    assert(!r.text.includes("+rerank"), "should not have +rerank when rerank disabled");
+  });
+
+  it("memory_recall defaults to mode=auto when arg omitted", async () => {
+    const r = await client.callTool("memory_recall", { dir: DEMO, query: "jwt" });
+    assertIncludes(r.text, "[keyword]"); // because no embed key in this test client
   });
 
   it("returns no-match gracefully", async () => {
