@@ -31,6 +31,7 @@ import { embed, embedOne, cosine, embeddingConfig } from "./embedding.js";
 import { rerank, rerankConfig } from "./rerank.js";
 import { deterministicEnabled } from "./env.js";
 import { ensureGraphState, resolveLink, loadNoteBody } from "./graph.js";
+import { loadGlobalNotes } from "./global-index.js";
 import { computeStats, formatText, formatJson } from "../lib/stats.js";
 
 const VAULT_ROOT =
@@ -238,6 +239,20 @@ class ProjectMemoryServer {
           },
         },
         {
+          name: "memory_global_recall",
+          description: "Recall relevant notes across projects with same-project bias and graceful keyword fallback.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "What you need context about" },
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              limit: { type: "number", description: "Max notes to return", default: 5 },
+              full: { type: "boolean", description: "Return full bodies instead of excerpts", default: false },
+            },
+            required: ["query"],
+          },
+        },
+        {
           name: "memory_stats",
           description: "Summarize local memory storage across vault / journal / checkpoints: totals, top projects, recent activity, and temp-slug cleanup candidates. Returns the same text as the `stats` CLI.",
           inputSchema: {
@@ -263,6 +278,7 @@ class ProjectMemoryServer {
           case "memory_delete": return await this.del(args || {});
           case "memory_reindex": return await this.reindex(args || {});
           case "memory_link": return await this.link(args || {});
+          case "memory_global_recall": return await this.globalRecall(args || {});
           case "memory_stats": return await this.stats(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
@@ -425,6 +441,40 @@ class ProjectMemoryServer {
       : mode === "keyword" && isReranked ? "keyword+rerank"
       : mode;
     return { content: [{ type: "text", text: `Recall for "${query}" in ${p.slug} [${displayMode}]:\n\n${blocks.join("\n\n---\n\n")}` }] };
+  }
+
+  async globalRecall({ query, dir, limit: lim = 5, full = false }) {
+    query = limit(query, "query", 2000);
+    const p = this.paths(dir);
+    const rows = await loadGlobalNotes(VAULT_ROOT);
+    const qTokens = new Set(tokenize(query));
+    const qVec = deterministicEnabled() ? null : await embedOne(query);
+    const haveEmbeddings = !!(qVec && rows.some((row) => Array.isArray(row.note.embedding)));
+
+    const scored = rows.map(({ slug, note }) => {
+      let kwScore = 0;
+      for (const keyword of note.keywords || []) if (qTokens.has(keyword)) kwScore += 1;
+      for (const word of tokenize(note.title)) if (qTokens.has(word)) kwScore += 2;
+      const sameProjectBoost = slug === p.slug ? 0.25 : 0;
+      const sim = haveEmbeddings && Array.isArray(note.embedding) ? cosine(qVec, note.embedding) : 0;
+      const score = (haveEmbeddings ? (0.8 * sim) : 0) + (0.2 * kwScore) + sameProjectBoost;
+      return { slug, note, sim, score };
+    }).filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score || (a.note.created < b.note.created ? 1 : -1))
+      .slice(0, Math.max(1, Math.min(20, lim)));
+
+    if (scored.length === 0) {
+      return { content: [{ type: "text", text: `No relevant global memories for "${query}". Try memory_list or memory_recall.` }] };
+    }
+
+    const mode = haveEmbeddings ? "semantic+graph" : "keyword+graph";
+    const blocks = await Promise.all(scored.map(async ({ slug, note, sim, score }) => {
+      const raw = await fs.readFile(path.join(VAULT_ROOT, slug, note.file), "utf8").catch(() => "");
+      const { body } = parseFrontmatter(raw);
+      const text = full ? body.trim() : body.trim().split("\n").slice(0, 12).join("\n");
+      return `### ${note.title}  ([${slug}], ${haveEmbeddings ? `sim:${sim.toFixed(3)}` : `score:${score.toFixed(2)}`})\n${text}`;
+    }));
+    return { content: [{ type: "text", text: `Global recall for "${query}" [${mode}]:\n\n${blocks.join("\n\n---\n\n")}` }] };
   }
 
   async list({ dir, limit: lim = 20 }) {

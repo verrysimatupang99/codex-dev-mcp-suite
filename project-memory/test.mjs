@@ -119,6 +119,23 @@ describe("project-memory", () => {
     }
   });
 
+  it("loads notes across projects for global operations", async () => {
+    const mod = await import("./global-index.js");
+    const vaultRoot = tmpDir("pm-global-vault-");
+    try {
+      fs.mkdirSync(path.join(vaultRoot, "proj-a"), { recursive: true });
+      fs.mkdirSync(path.join(vaultRoot, "proj-b"), { recursive: true });
+      fs.writeFileSync(path.join(vaultRoot, "proj-a", "index.json"), JSON.stringify({ notes: { a1: { id: "a1", title: "Alpha" } } }));
+      fs.writeFileSync(path.join(vaultRoot, "proj-b", "index.json"), JSON.stringify({ notes: { b1: { id: "b1", title: "Beta" } } }));
+      const rows = await mod.loadGlobalNotes(vaultRoot);
+      assertEqual(rows.length, 2);
+      assert("slug" in rows[0]);
+      assert("note" in rows[0]);
+    } finally {
+      rmrf(vaultRoot);
+    }
+  });
+
   it("parses deterministic fallback true values", async () => {
     const old = { ...process.env };
     const { deterministicEnabled } = await import(`./env.js?det-test=${Date.now()}`);
@@ -380,6 +397,16 @@ describe("project-memory", () => {
     assertIncludes(r.text, "Auth Hub");
     assertIncludes(r.text, "JWT Details");
     assertIncludes(r.text, "resolved");
+  });
+
+  it("memory_global_recall prefers same-project notes before global fallback", async () => {
+    await client.callTool("memory_save", { dir: DEMO, title: "API Auth Local", content: "same project winner" });
+    await client.callTool("memory_save", { dir: "/tmp/pm-other-project", title: "API Auth Remote", content: "other project candidate" });
+    const r = await client.callTool("memory_global_recall", { dir: DEMO, query: "API Auth", limit: 5 });
+    const localPos = r.text.indexOf("API Auth Local");
+    const remotePos = r.text.indexOf("API Auth Remote");
+    assert(localPos !== -1 && remotePos !== -1);
+    assert(localPos < remotePos, "expected same-project note first");
   });
 
   it("deletes a note", async () => {
