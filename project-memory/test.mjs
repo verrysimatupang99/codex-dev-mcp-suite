@@ -45,6 +45,80 @@ const client = new McpClient(SERVER, { MEMORY_VAULT_DIR: VAULT, NINEROUTER_KEY: 
 let savedId = "";
 
 describe("project-memory", () => {
+  it("parses wiki links from note bodies", async () => {
+    const mod = await import("./graph.js");
+    const links = mod.extractWikiLinks("See [[abc123]] and [[proj:Design Note]] and [[JWT Flow]]");
+    assertEqual(JSON.stringify(links), JSON.stringify([
+      { raw: "[[abc123]]", ref: "abc123", project: null, kind: "id" },
+      { raw: "[[proj:Design Note]]", ref: "Design Note", project: "proj", kind: "title" },
+      { raw: "[[JWT Flow]]", ref: "JWT Flow", project: null, kind: "title" },
+    ]));
+  });
+
+  it("derives note links and id backlinks", async () => {
+    const mod = await import("./graph.js");
+    const index = {
+      notes: {
+        abc123: { id: "abc123", title: "Target", file: "abc123.md" },
+        def456: { id: "def456", title: "Source", file: "def456.md" },
+      },
+    };
+    const bodies = {
+      "abc123.md": "Target body",
+      "def456.md": "See [[abc123]] and [[Other Title]] and [[remote:Cross Project]]",
+    };
+
+    const result = await mod.ensureGraphState({
+      index,
+      projectDir: "/tmp/project-memory-graph-test",
+      noteLoader: async (_projectDir, file) => bodies[file],
+    });
+
+    assertEqual(result.changed, true);
+    assertEqual(JSON.stringify(result.index.notes.def456.links), JSON.stringify([
+      { raw: "[[abc123]]", ref: "abc123", project: null, kind: "id" },
+      { raw: "[[Other Title]]", ref: "Other Title", project: null, kind: "title" },
+      { raw: "[[remote:Cross Project]]", ref: "Cross Project", project: "remote", kind: "title" },
+    ]));
+    assertEqual(JSON.stringify(result.index.notes.abc123.backlinks), JSON.stringify([{ id: "def456", title: "Source" }]));
+    assertEqual(result.index.notes.def456.backlinks, undefined);
+  });
+
+  it("loads note body without frontmatter", async () => {
+    const mod = await import("./graph.js");
+    const tmp = tmpDir("pm-graph-body-");
+    try {
+      fs.writeFileSync(path.join(tmp, "note.md"), "---\ntitle: \"Graph Note\"\n---\n\nBody with [[abc123]]");
+      const body = await mod.loadNoteBody(tmp, "note.md");
+      assertEqual(body.trim(), "Body with [[abc123]]");
+    } finally {
+      rmrf(tmp);
+    }
+  });
+
+  it("resolves links by id and title within a vault", async () => {
+    const mod = await import("./graph.js");
+    const vaultRoot = tmpDir("pm-graph-vault-");
+    try {
+      const slug = "demo-slug";
+      fs.mkdirSync(path.join(vaultRoot, slug), { recursive: true });
+      fs.writeFileSync(path.join(vaultRoot, slug, "index.json"), JSON.stringify({
+        notes: {
+          abc123: { id: "abc123", title: "Target" },
+          def456: { id: "def456", title: "Design Note" },
+        },
+      }));
+      const byId = await mod.resolveLink({ vaultRoot, currentSlug: slug, ref: "abc123", project: null, kind: "id" });
+      const byTitle = await mod.resolveLink({ vaultRoot, currentSlug: slug, ref: "Design Note", project: null, kind: "title" });
+      assertEqual(byId.status, "resolved");
+      assertEqual(byId.match.id, "abc123");
+      assertEqual(byTitle.status, "resolved");
+      assertEqual(byTitle.match.id, "def456");
+    } finally {
+      rmrf(vaultRoot);
+    }
+  });
+
   it("parses deterministic fallback true values", async () => {
     const old = { ...process.env };
     const { deterministicEnabled } = await import(`./env.js?det-test=${Date.now()}`);

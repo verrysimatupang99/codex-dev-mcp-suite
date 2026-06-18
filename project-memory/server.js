@@ -26,6 +26,7 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 import crypto from "crypto";
+import { fileURLToPath } from "url";
 import { embed, embedOne, cosine, embeddingConfig } from "./embedding.js";
 import { rerank, rerankConfig } from "./rerank.js";
 import { deterministicEnabled } from "./env.js";
@@ -44,7 +45,7 @@ const STOPWORDS = new Set([
   "not", "no", "do", "did", "does", "can", "will", "so", "my", "our", "your",
 ]);
 
-function projectSlug(dir) {
+export function projectSlug(dir) {
   const resolved = path.resolve(dir || process.cwd());
   const base = path.basename(resolved) || "root";
   const hash = crypto.createHash("sha1").update(resolved).digest("hex").slice(0, 8);
@@ -76,7 +77,7 @@ function limit(value, name, max, required = true) {
   return text;
 }
 
-function parseFrontmatter(raw) {
+export function parseFrontmatter(raw) {
   const m = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!m) return { meta: {}, body: raw };
   const meta = {};
@@ -488,5 +489,9 @@ class ProjectMemoryServer {
   }
 }
 
-const server = new ProjectMemoryServer();
-server.run().catch(console.error);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const server = new ProjectMemoryServer();
+  server.run().catch(console.error);
+}
+
+export { ProjectMemoryServer };
