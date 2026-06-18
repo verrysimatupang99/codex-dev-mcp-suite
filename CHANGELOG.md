@@ -1,3 +1,12 @@
+## 1.5.0
+
+- add `memory_link` with wiki-link resolution for `[[id]]`, `[[title]]`, `[[project:id]]`, and `[[project:title]]`, plus backlink inspection
+- add `memory_global_recall` with same-project bias and graceful keyword/semantic fallback across project vaults
+- add `memory_dedup` with non-destructive duplicate suggestions for project or global scope
+- add hybrid lazy graph backfill so link metadata is derived on first graph-aware use and remains rebuildable from canonical notes
+- add graph-aware soft boost in recall paths without making embeddings mandatory
+- 36 project-memory tests pass after graph/global/dedup coverage expansion
+
 # Changelog
 
 ## 1.4.0 - 2026-06-17

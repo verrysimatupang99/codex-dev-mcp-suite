@@ -66,7 +66,7 @@ Other clients (Claude Code, Cursor, Cline, ...): see
 
 | Server | What it does | Key tools |
 |---|---|---|
-| **project-memory** | Searchable Markdown knowledge vault (Obsidian-style notes + on-demand recall). Notes are also exposed as MCP resources. | `memory_save`, `memory_recall`, `memory_list`, `memory_get`, `memory_delete`, `memory_reindex` |
+| **project-memory** | Searchable Markdown knowledge vault (Obsidian-style notes + on-demand recall). Notes are also exposed as MCP resources. | `memory_save`, `memory_recall`, `memory_list`, `memory_get`, `memory_delete`, `memory_reindex`, `memory_link`, `memory_global_recall`, `memory_dedup` |
 | **devjournal** | Per-project session timeline + handoff/resume (anti-compaction). | `journal_log`, `journal_handoff`, `journal_resume`, `journal_timeline`, `journal_search`, `journal_clear_handoff` |
 | **checkpoint** | Git-independent file snapshots for safe experimentation. | `checkpoint_create`, `checkpoint_list`, `checkpoint_diff`, `checkpoint_restore`, `checkpoint_delete` |
 | **context-pack** | Token-efficient project briefing (stack, tree, symbols, search). | `pack_overview`, `pack_tree`, `pack_outline`, `pack_search` |
@@ -191,6 +191,16 @@ With `MCP_DETERMINISTIC_FALLBACK=true`, the mode is always `[deterministic]`.
 
 This means you can run codex-dev-mcp-suite with **zero API keys configured** —
 `memory_recall` still works via keyword scoring, just no semantic similarity.
+
+### New in v1.5.0
+
+`project-memory` now adds a lightweight knowledge-graph layer:
+
+- `memory_link` resolves wiki-style links like `[[id]]`, `[[title]]`, and `[[project:title]]`, and shows backlinks
+- `memory_global_recall` searches across projects with same-project bias and graceful keyword fallback
+- `memory_dedup` suggests duplicate-note merges without deleting anything
+
+Link resolution always prefers the active project first, then falls back globally when appropriate.
 
 ## Daily workflow
 
