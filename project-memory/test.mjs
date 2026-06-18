@@ -362,11 +362,31 @@ describe("project-memory", () => {
     assertIncludes(r.text, "failed");
   });
 
+  it("memory_link resolves note links and backlinks", async () => {
+    const saveA = await client.callTool("memory_save", {
+      dir: DEMO,
+      title: "Auth Hub",
+      content: "See [[JWT Details]]",
+      tags: ["auth"],
+    });
+    const saveB = await client.callTool("memory_save", {
+      dir: DEMO,
+      title: "JWT Details",
+      content: "Token notes",
+      tags: ["jwt"],
+    });
+    const idA = (saveA.text.match(/Saved note (\S+)/) || [])[1];
+    const r = await client.callTool("memory_link", { dir: DEMO, id: idA });
+    assertIncludes(r.text, "Auth Hub");
+    assertIncludes(r.text, "JWT Details");
+    assertIncludes(r.text, "resolved");
+  });
+
   it("deletes a note", async () => {
     const r = await client.callTool("memory_delete", { dir: DEMO, id: savedId });
     assertIncludes(r.text, "Deleted note");
     const r2 = await client.callTool("memory_list", { dir: DEMO });
-    assertIncludes(r2.text, "No memories");
+    assert(!r2.text.includes(savedId), `expected deleted id ${savedId} to be absent from list`);
   });
 });
 

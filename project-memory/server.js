@@ -30,6 +30,7 @@ import { fileURLToPath } from "url";
 import { embed, embedOne, cosine, embeddingConfig } from "./embedding.js";
 import { rerank, rerankConfig } from "./rerank.js";
 import { deterministicEnabled } from "./env.js";
+import { ensureGraphState, resolveLink, loadNoteBody } from "./graph.js";
 import { computeStats, formatText, formatJson } from "../lib/stats.js";
 
 const VAULT_ROOT =
@@ -224,6 +225,19 @@ class ProjectMemoryServer {
           },
         },
         {
+          name: "memory_link",
+          description: "Resolve wiki-style note links and show backlinks for a note.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              id: { type: "string", description: "Note id to inspect" },
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              include_unresolved: { type: "boolean", description: "Include unresolved links in output", default: true },
+            },
+            required: ["id"],
+          },
+        },
+        {
           name: "memory_stats",
           description: "Summarize local memory storage across vault / journal / checkpoints: totals, top projects, recent activity, and temp-slug cleanup candidates. Returns the same text as the `stats` CLI.",
           inputSchema: {
@@ -248,6 +262,7 @@ class ProjectMemoryServer {
           case "memory_get": return await this.get(args || {});
           case "memory_delete": return await this.del(args || {});
           case "memory_reindex": return await this.reindex(args || {});
+          case "memory_link": return await this.link(args || {});
           case "memory_stats": return await this.stats(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
@@ -443,6 +458,47 @@ class ProjectMemoryServer {
     delete index.notes[id];
     await this.saveIndex(p, index);
     return { content: [{ type: "text", text: `Deleted note ${id} from ${p.slug}` }] };
+  }
+
+  async link({ id, dir, include_unresolved = true }) {
+    id = limit(id, "id", 100);
+    const p = this.paths(dir);
+    const index = await this.loadIndex(p);
+    const note = index.notes?.[id];
+    if (!note) throw new Error(`Note ${id} not found in ${p.slug}`);
+
+    const ensured = await ensureGraphState({
+      vaultRoot: VAULT_ROOT,
+      projectDir: p.projectDir,
+      slug: p.slug,
+      index,
+      noteLoader: loadNoteBody,
+    });
+    if (ensured.changed) await this.saveIndex(p, ensured.index);
+
+    const current = ensured.index.notes[id];
+    const links = [];
+    for (const link of current.links || []) {
+      const resolved = await resolveLink({
+        vaultRoot: VAULT_ROOT,
+        currentSlug: p.slug,
+        ref: link.ref,
+        project: link.project,
+        kind: link.kind,
+      });
+      if (resolved.status !== "missing" || include_unresolved) links.push({ link, resolved });
+    }
+
+    const lines = [
+      `Links for ${current.title} (${current.id})`,
+      "",
+      "Outgoing:",
+      ...links.map(({ link, resolved }) => `- ${link.raw} -> ${resolved.status}${resolved.match ? ` (${resolved.match.title})` : ""}`),
+      "",
+      "Backlinks:",
+      ...((current.backlinks || []).length ? current.backlinks.map((b) => `- ${b.title} (${b.id})`) : ["- none"]),
+    ];
+    return { content: [{ type: "text", text: lines.join("\n") }] };
   }
 
   async reindex({ dir, force = false }) {
