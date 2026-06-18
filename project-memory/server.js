@@ -32,6 +32,7 @@ import { rerank, rerankConfig } from "./rerank.js";
 import { deterministicEnabled } from "./env.js";
 import { ensureGraphState, resolveLink, loadNoteBody } from "./graph.js";
 import { loadGlobalNotes } from "./global-index.js";
+import { findDuplicateCandidates } from "./dedup.js";
 import { computeStats, formatText, formatJson } from "../lib/stats.js";
 
 const VAULT_ROOT =
@@ -106,6 +107,16 @@ function buildFrontmatter(meta) {
   }
   lines.push("---", "");
   return lines.join("\n");
+}
+
+function graphBoost(note, queryTokens) {
+  let score = 0;
+  for (const link of note.links || []) {
+    for (const token of queryTokens) {
+      if (String(link.ref || "").toLowerCase().includes(token)) score += 0.05;
+    }
+  }
+  return Math.min(0.15, score);
 }
 
 class ProjectMemoryServer {
@@ -253,6 +264,18 @@ class ProjectMemoryServer {
           },
         },
         {
+          name: "memory_dedup",
+          description: "Find likely duplicate notes and suggest non-destructive merges.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              threshold: { type: "number", description: "Duplicate threshold", default: 0.9 },
+              scope: { type: "string", enum: ["project", "global"], description: "Dedup scope", default: "project" },
+            },
+          },
+        },
+        {
           name: "memory_stats",
           description: "Summarize local memory storage across vault / journal / checkpoints: totals, top projects, recent activity, and temp-slug cleanup candidates. Returns the same text as the `stats` CLI.",
           inputSchema: {
@@ -279,6 +302,7 @@ class ProjectMemoryServer {
           case "memory_reindex": return await this.reindex(args || {});
           case "memory_link": return await this.link(args || {});
           case "memory_global_recall": return await this.globalRecall(args || {});
+          case "memory_dedup": return await this.dedup(args || {});
           case "memory_stats": return await this.stats(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
@@ -353,7 +377,15 @@ class ProjectMemoryServer {
     query = limit(query, "query", 2000);
     const p = this.paths(dir);
     const index = await this.loadIndex(p);
-    const notes = Object.values(index.notes || {});
+    const ensured = await ensureGraphState({
+      vaultRoot: VAULT_ROOT,
+      projectDir: p.projectDir,
+      slug: p.slug,
+      index,
+      noteLoader: loadNoteBody,
+    });
+    if (ensured.changed) await this.saveIndex(p, ensured.index);
+    const notes = Object.values(ensured.index.notes || {});
     if (notes.length === 0) {
       return { content: [{ type: "text", text: `No memories for ${p.slug} yet. Use memory_save first.` }] };
     }
@@ -384,14 +416,14 @@ class ProjectMemoryServer {
       scored = notes.map((n) => {
         const sim = Array.isArray(n.embedding) ? cosine(qVec, n.embedding) : 0;
         const kwNorm = kw(n) / maxKw;
-        const score = 0.8 * sim + 0.2 * kwNorm;
+        const score = 0.8 * sim + 0.2 * kwNorm + graphBoost(n, [...qTokens]);
         return { n, score, sim };
       }).filter((x) => x.score > 0.05)
         .sort((a, b) => b.score - a.score || (a.n.created < b.n.created ? 1 : -1))
         .slice(0, Math.max(1, Math.min(20, lim)));
     } else {
       const want = Math.max(1, Math.min(20, lim));
-      const kwRanked = notes.map((n) => ({ n, score: kw(n) }))
+      const kwRanked = notes.map((n) => ({ n, score: kw(n) + graphBoost(n, [...qTokens]) }))
         .filter((x) => x.score > 0)
         .sort((a, b) => b.score - a.score || (a.n.created < b.n.created ? 1 : -1));
 
@@ -443,9 +475,39 @@ class ProjectMemoryServer {
     return { content: [{ type: "text", text: `Recall for "${query}" in ${p.slug} [${displayMode}]:\n\n${blocks.join("\n\n---\n\n")}` }] };
   }
 
+  async dedup({ dir, threshold = 0.9, scope = "project" }) {
+    const p = this.paths(dir);
+    const rows = await loadGlobalNotes(VAULT_ROOT);
+    const filtered = scope === "project" ? rows.filter((row) => row.slug === p.slug) : rows;
+    const withBodies = await Promise.all(filtered.map(async ({ slug, note }) => {
+      const raw = await fs.readFile(path.join(VAULT_ROOT, slug, note.file), "utf8").catch(() => "");
+      const { body } = parseFrontmatter(raw);
+      return { slug, note, body };
+    }));
+    const pairs = findDuplicateCandidates({ rows: withBodies, threshold });
+    if (!pairs.length) {
+      return { content: [{ type: "text", text: `No duplicate suggestions above ${threshold} in ${scope} scope.` }] };
+    }
+    const lines = [`Duplicate suggestions [threshold=${threshold}, scope=${scope}]:`, ""];
+    for (const pair of pairs) {
+      lines.push(`- suggested merge: [${pair.left.slug}] ${pair.left.note.title} <-> [${pair.right.slug}] ${pair.right.note.title} (score=${pair.score.toFixed(3)})`);
+      lines.push(`  reasons: ${pair.reasons.join(", ")}`);
+    }
+    return { content: [{ type: "text", text: lines.join("\n") }] };
+  }
+
   async globalRecall({ query, dir, limit: lim = 5, full = false }) {
     query = limit(query, "query", 2000);
     const p = this.paths(dir);
+    const currentIndex = await this.loadIndex(p);
+    const ensured = await ensureGraphState({
+      vaultRoot: VAULT_ROOT,
+      projectDir: p.projectDir,
+      slug: p.slug,
+      index: currentIndex,
+      noteLoader: loadNoteBody,
+    });
+    if (ensured.changed) await this.saveIndex(p, ensured.index);
     const rows = await loadGlobalNotes(VAULT_ROOT);
     const qTokens = new Set(tokenize(query));
     const qVec = deterministicEnabled() ? null : await embedOne(query);
@@ -457,7 +519,7 @@ class ProjectMemoryServer {
       for (const word of tokenize(note.title)) if (qTokens.has(word)) kwScore += 2;
       const sameProjectBoost = slug === p.slug ? 0.25 : 0;
       const sim = haveEmbeddings && Array.isArray(note.embedding) ? cosine(qVec, note.embedding) : 0;
-      const score = (haveEmbeddings ? (0.8 * sim) : 0) + (0.2 * kwScore) + sameProjectBoost;
+      const score = (haveEmbeddings ? (0.8 * sim) : 0) + (0.2 * kwScore) + sameProjectBoost + graphBoost(note, [...qTokens]);
       return { slug, note, sim, score };
     }).filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score || (a.note.created < b.note.created ? 1 : -1))

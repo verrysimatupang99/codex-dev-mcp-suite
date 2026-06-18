@@ -32,6 +32,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { spawnSync } from "child_process";
+import crypto from "crypto";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SERVER = path.join(__dirname, "server.js");
@@ -43,6 +44,19 @@ const DEMO = "/tmp/pm-demo-project";
 const client = new McpClient(SERVER, { MEMORY_VAULT_DIR: VAULT, NINEROUTER_KEY: "", EMBED_KEY: "" });
 
 let savedId = "";
+
+function projectPathsForTest(dir) {
+  const resolved = path.resolve(dir || process.cwd());
+  const base = path.basename(resolved) || "root";
+  const safeBase = base.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 40);
+  const hash = crypto.createHash("sha1").update(resolved).digest("hex").slice(0, 8);
+  const slug = `${safeBase}-${hash}`;
+  return {
+    slug,
+    projectDir: path.join(VAULT, slug),
+    indexFile: path.join(VAULT, slug, "index.json"),
+  };
+}
 
 describe("project-memory", () => {
   it("parses wiki links from note bodies", async () => {
@@ -399,6 +413,18 @@ describe("project-memory", () => {
     assertIncludes(r.text, "resolved");
   });
 
+  it("scores duplicate candidates with explanatory reasons", async () => {
+    const mod = await import("./dedup.js");
+    const result = mod.scoreDuplicatePair({
+      a: { title: "JWT Plan", links: [] },
+      b: { title: "JWT Plan", links: [] },
+      aBody: "refresh token cookie flow",
+      bBody: "refresh token cookie flow",
+    });
+    assert(result.score >= 0.9);
+    assert(result.reasons.some((value) => value.includes("title")));
+  });
+
   it("memory_global_recall prefers same-project notes before global fallback", async () => {
     await client.callTool("memory_save", { dir: DEMO, title: "API Auth Local", content: "same project winner" });
     await client.callTool("memory_save", { dir: "/tmp/pm-other-project", title: "API Auth Remote", content: "other project candidate" });
@@ -407,6 +433,35 @@ describe("project-memory", () => {
     const remotePos = r.text.indexOf("API Auth Remote");
     assert(localPos !== -1 && remotePos !== -1);
     assert(localPos < remotePos, "expected same-project note first");
+  });
+
+  it("memory_dedup suggests merges without deleting notes", async () => {
+    await client.callTool("memory_save", { dir: DEMO, title: "Duplicate JWT", content: "same body same body" });
+    await client.callTool("memory_save", { dir: DEMO, title: "Duplicate JWT", content: "same body same body" });
+    const r = await client.callTool("memory_dedup", { dir: DEMO, threshold: 0.9 });
+    assertIncludes(r.text, "Duplicate JWT");
+    assertIncludes(r.text, "suggested merge");
+    assert(!/Deleted note/.test(r.text));
+  });
+
+  it("lazy backfill populates links for old notes on first graph tool use", async () => {
+    const save = await client.callTool("memory_save", {
+      dir: DEMO,
+      title: "Legacy Link Note",
+      content: "points to [[Legacy Target]]",
+    });
+    await client.callTool("memory_save", {
+      dir: DEMO,
+      title: "Legacy Target",
+      content: "target body",
+    });
+    const id = (save.text.match(/Saved note (\S+)/) || [])[1];
+    const paths = projectPathsForTest(DEMO);
+    const index = JSON.parse(fs.readFileSync(paths.indexFile, "utf8"));
+    delete index.notes[id].links;
+    fs.writeFileSync(paths.indexFile, JSON.stringify(index, null, 2));
+    const r = await client.callTool("memory_link", { dir: DEMO, id });
+    assertIncludes(r.text, "Legacy Target");
   });
 
   it("deletes a note", async () => {
