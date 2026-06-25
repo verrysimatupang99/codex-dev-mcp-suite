@@ -64,6 +64,12 @@ export class McpClient {
     return (res.result?.tools || []).map((t) => t.name);
   }
 
+  async listResourceTemplates() {
+    const res = await this._rpc("resources/templates/list", {});
+    if (res.error) throw new Error(`RPC error: ${res.error.message}`);
+    return res.result?.resourceTemplates || [];
+  }
+
   async callTool(name, args = {}, timeoutMs = 30000) {
     const res = await this._rpc("tools/call", { name, arguments: args }, timeoutMs);
     if (res.error) throw new Error(`RPC error: ${res.error.message}`);
