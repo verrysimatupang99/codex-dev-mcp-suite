@@ -288,6 +288,12 @@ describe("project-memory", () => {
       assert(tools.includes(t), `missing ${t}`);
   });
 
+  it("lists no resource templates", async () => {
+    const templates = await client.listResourceTemplates();
+    assert(Array.isArray(templates), "templates response must be an array");
+    assert(templates.length === 0, "project-memory has no resource templates");
+  });
+
   it("memory_stats returns human text by default", async () => {
     // point at a custom tmp root so test is hermetic
     const tmpRoot = tmpDir("pm-stats-");
