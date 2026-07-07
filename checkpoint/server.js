@@ -24,7 +24,7 @@ import crypto from "crypto";
 
 const ROOT =
   process.env.CHECKPOINT_DIR ||
-  path.join(os.homedir(), ".codex", "memories", "checkpoints");
+  path.join(os.homedir(), ".ai-shared-memory", "checkpoints");
 
 const DEFAULT_IGNORE = new Set([
   "node_modules", ".git", ".next", "dist", "build", "target", ".venv",

@@ -36,7 +36,7 @@ import { deterministicEnabled } from "./env.js";
 
 const ROOT =
   process.env.JOURNAL_DIR ||
-  path.join(os.homedir(), ".codex", "memories", "journal");
+  path.join(os.homedir(), ".ai-shared-memory", "journal");
 
 const MAX_TEXT = 20_000;
 
@@ -170,6 +170,16 @@ class DevJournalServer {
             properties: { dir: { type: "string", description: "Project directory (defaults to CWD)" } },
           },
         },
+        {
+          name: "initialize_agent_session",
+          description: "Initialize the current agent session. Run this ONCE when the agent starts in a new project to perform a handshake and get contextual handoff.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+            },
+          },
+        },
       ],
     }));
 
@@ -183,6 +193,7 @@ class DevJournalServer {
           case "journal_timeline": return await this.timeline(args || {});
           case "journal_search": return await this.search(args || {});
           case "journal_clear_handoff": return await this.clearHandoff(args || {});
+          case "initialize_agent_session": return await this.initializeAgent(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
       } catch (e) {
@@ -299,6 +310,30 @@ class DevJournalServer {
     const p = this.paths(dir);
     await fs.unlink(p.handoff).catch(() => {});
     return { content: [{ type: "text", text: `Cleared handoff for ${p.slug}` }] };
+  }
+
+  async initializeAgent({ dir }) {
+    const agentName = process.env.MCP_AGENT_NAME || 'Unknown-Agent';
+    const resumeData = await this.resume({ dir, recent: 5 });
+    
+    let rules = "";
+    try {
+      const p = this.paths(dir);
+      const rulePath = path.join(p.root, ".ai", "AGENTS.md");
+      const r = await fs.readFile(rulePath, "utf8");
+      rules = `\n\n## Project Rules (.ai/AGENTS.md)\n${r}`;
+    } catch { 
+      try {
+        const rootRule = path.join(this.paths(dir).root, "AGENTS.md");
+        const rr = await fs.readFile(rootRule, "utf8");
+        rules = `\n\n## Project Rules (AGENTS.md)\n${rr}`;
+      } catch {}
+    }
+
+    const greeting = `# Universal MCP Handshake\nAgent: ${agentName}\n\n`;
+    const content = greeting + resumeData.content[0].text + rules;
+    
+    return { content: [{ type: "text", text: content }] };
   }
 
   async run() {

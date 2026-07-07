@@ -38,7 +38,7 @@ import { computeStats, formatText, formatJson } from "../lib/stats.js";
 
 const VAULT_ROOT =
   process.env.MEMORY_VAULT_DIR ||
-  path.join(os.homedir(), ".codex", "memories", "vault");
+  path.join(os.homedir(), ".ai-shared-memory", "vault");
 
 const MAX_CONTENT = 200_000;
 const MAX_TITLE = 200;
@@ -647,7 +647,7 @@ class ProjectMemoryServer {
             ? path.dirname(process.env.JOURNAL_DIR)
             : process.env.CHECKPOINT_DIR
               ? path.dirname(process.env.CHECKPOINT_DIR)
-              : path.join(os.homedir(), ".codex", "memories"));
+              : path.join(os.homedir(), ".ai-shared-memory"));
     const stats = computeStats({ root, topLimit: top });
     const text = json ? formatJson(stats) : formatText(stats);
     return { content: [{ type: "text", text }] };

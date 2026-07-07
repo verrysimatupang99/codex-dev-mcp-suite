@@ -36,7 +36,7 @@ function resolveRoot() {
       return parent;
     }
   }
-  return path.join(os.homedir(), ".codex", "memories");
+  return path.join(os.homedir(), ".ai-shared-memory");
 }
 
 function parseArgs(argv) {
