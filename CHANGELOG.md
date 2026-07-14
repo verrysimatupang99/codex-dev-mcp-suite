@@ -124,3 +124,12 @@
 - `memory_graph` — export note graph (nodes + directed edges from `[[wikilinks]]`) as JSON for external graph views.
 - Auto-bootstrap `.obsidian/` workspace (`app.json` + `workspace.json`) on first save, so the vault opens directly in the Obsidian app with graph view + tag pages.
 - MOC regenerates automatically after `memory_save` and `memory_delete`.
+
+## [1.8.0] - 2026-07-14 — Vibecoder ergonomics (P1/P2, feat/obsidian-grade-vault)
+### Added (project-memory)
+- Auto-resolve `[[wikilinks]]` + backlinks immediately on `memory_save` (graph fresh without waiting for recall).
+- Per-tag index pages: `tags/<tag>.md` emitted alongside MOC, pruned when tag empties.
+- `aliases` field on notes (Obsidian-style); `[[alias]]` now resolves via `resolveLink`.
+### Added (devjournal)
+- `journal_daily` — Obsidian-style daily note (`daily/YYYY-MM-DD.md`); read or append mode.
+- `journal_log` now auto-appends a line to today's daily note.

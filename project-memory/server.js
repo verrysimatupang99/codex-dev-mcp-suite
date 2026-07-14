@@ -211,6 +211,31 @@ class ProjectMemoryServer {
     }
     lines.push("");
     await fs.writeFile(path.join(p.projectDir, "MOC.md"), lines.join("\n"));
+    // Also emit a standalone #tag index page per tag (Obsidian-style tag pages).
+    await this.writeTagPages(p, tagMap);
+  }
+
+  // Emit one `tags/<tag>.md` page per tag, listing all notes carrying it.
+  async writeTagPages(p, tagMap) {
+    const tagDir = path.join(p.projectDir, "tags");
+    await fs.mkdir(tagDir, { recursive: true });
+    for (const [tag, ns] of tagMap.entries()) {
+      const body = [
+        `# Tag: ${tag}`,
+        "",
+        ns.map((n) => `- [[${n.title}]] — *${n.kind || "note"}*`).join("\n"),
+        "",
+      ].join("\n");
+      await fs.writeFile(path.join(tagDir, `${String(tag).replace(/[^a-zA-Z0-9._-]/g, "-")}.md`), body);
+    }
+    // prune tag pages with no notes left
+    let files = [];
+    try { files = await fs.readdir(tagDir); } catch { return; }
+    for (const f of files) {
+      if (!f.endsWith(".md")) continue;
+      const t = f.slice(0, -3);
+      if (!tagMap.has(t)) await fs.unlink(path.join(tagDir, f)).catch(() => {});
+    }
   }
 
   // Export the note graph (nodes + directed edges) for external graph views.
@@ -242,6 +267,7 @@ class ProjectMemoryServer {
               dir: { type: "string", description: "Project directory (defaults to CWD)" },
               tags: { type: "array", items: { type: "string" }, description: "Optional tags" },
               kind: { type: "string", description: "note | decision | task | log | snippet", default: "note" },
+              aliases: { type: "array", items: { type: "string" }, description: "Optional Obsidian-style aliases for the note (alt titles wikilinks can reference)" },
               created: { type: "string", description: "Optional ISO timestamp to backdate the note (e.g. original session time)" },
             },
             required: ["title", "content"],
@@ -443,22 +469,23 @@ class ProjectMemoryServer {
     });
   }
 
-  async save({ title, content, dir, tags, kind = "note", created: createdArg }) {
+  async save({ title, content, dir, tags, kind = "note", aliases, created: createdArg }) {
     title = limit(title, "title", MAX_TITLE);
     content = limit(content, "content", MAX_CONTENT);
     const tagList = Array.isArray(tags) ? tags.map((t) => String(t).trim()).filter(Boolean) : [];
+    const aliasList = Array.isArray(aliases) ? aliases.map((t) => String(t).trim()).filter(Boolean) : [];
     const p = this.paths(dir);
     await fs.mkdir(p.notesDir, { recursive: true });
 
     const id = genId();
     const created = (createdArg && /^\d{4}-\d{2}-\d{2}/.test(String(createdArg))) ? String(createdArg) : nowIso();
-    const meta = { id, title, kind, tags: tagList, created, dir: path.resolve(dir || process.cwd()) };
+    const meta = { id, title, kind, tags: tagList, aliases: aliasList, created, dir: path.resolve(dir || process.cwd()) };
     const file = path.join(p.notesDir, `${id}.md`);
     await fs.writeFile(file, buildFrontmatter(meta) + `# ${title}\n\n${content}\n`);
 
     const index = await this.loadIndex(p);
     const keywords = [...new Set([...tokenize(title), ...tokenize(content), ...tagList.map((t) => t.toLowerCase())])];
-    const note = { id, title, kind, tags: tagList, created, keywords, file: path.relative(p.projectDir, file) };
+    const note = { id, title, kind, tags: tagList, aliases: aliasList, created, keywords, file: path.relative(p.projectDir, file) };
 
     const vec = await embedOne(`${title}\n\n${content}`);
     let embedded = false;
@@ -467,7 +494,16 @@ class ProjectMemoryServer {
     index.notes[id] = note;
     await this.saveIndex(p, index);
     await this.ensureObsidianFolder(p);
-    await this.writeMoc(p, index);
+    // Resolve [[wikilinks]] + backlinks immediately so the graph is fresh on save.
+    const ensured = await ensureGraphState({
+      vaultRoot: VAULT_ROOT,
+      projectDir: p.projectDir,
+      slug: p.slug,
+      index,
+      noteLoader: loadNoteBody,
+    });
+    if (ensured.changed) await this.saveIndex(p, ensured.index);
+    await this.writeMoc(p, ensured.index);
 
     return { content: [{ type: "text", text: `Saved note ${id} → ${p.slug}\nFile: ${file}\nKeywords indexed: ${keywords.length}${embedded ? " (semantic embedding stored)" : " (keyword-only; embeddings unavailable)"}\nMOC refreshed: ${path.join(p.projectDir, "MOC.md")}` }] };
   }

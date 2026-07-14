@@ -77,7 +77,14 @@ export async function resolveLink({ vaultRoot, currentSlug, ref, project, kind }
     candidates = notes.filter((note) => note.id === ref);
   } else {
     const target = String(ref || "").trim().toLowerCase();
-    candidates = notes.filter((note) => String(note.title || "").trim().toLowerCase() === target);
+    candidates = notes.filter((note) => {
+      if (String(note.title || "").trim().toLowerCase() === target) return true;
+      // Obsidian-style alias match
+      if (Array.isArray(note.aliases)) {
+        return note.aliases.some((a) => String(a).trim().toLowerCase() === target);
+      }
+      return false;
+    });
   }
 
   if (candidates.length === 0) return { status: "missing" };

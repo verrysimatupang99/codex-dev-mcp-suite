@@ -171,6 +171,18 @@ class DevJournalServer {
           },
         },
         {
+          name: "journal_daily",
+          description: "Read or create today's daily note for the project (Obsidian-style YYYY-MM-DD.md under daily/). Append mode adds a line; read mode returns the note. Great for a vibecoder's daily log that survives compaction.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              date: { type: "string", description: "Optional YYYY-MM-DD (defaults to today)" },
+              append: { type: "string", description: "If provided, append this line to the daily note" },
+            },
+          },
+        },
+        {
           name: "initialize_agent_session",
           description: "Initialize the current agent session. Run this ONCE when the agent starts in a new project to perform a handshake and get contextual handoff.",
           inputSchema: {
@@ -193,6 +205,7 @@ class DevJournalServer {
           case "journal_timeline": return await this.timeline(args || {});
           case "journal_search": return await this.search(args || {});
           case "journal_clear_handoff": return await this.clearHandoff(args || {});
+          case "journal_daily": return await this.daily(args || {});
           case "initialize_agent_session": return await this.initializeAgent(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
@@ -209,7 +222,32 @@ class DevJournalServer {
     const ts = (tsArg && /^\d{4}-\d{2}-\d{2}/.test(String(tsArg))) ? String(tsArg) : nowIso();
     const entry = { ts, type, title, body };
     await this.append(p, entry);
+    await this.appendDaily(p, ts.slice(0, 10), `- [${type}] ${title}${body ? ` — ${body.split("\n")[0].slice(0, 160)}` : ""}`);
     return { content: [{ type: "text", text: `Logged [${type}] "${title}" to ${p.slug}` }] };
+  }
+
+  // Obsidian-style daily note: one file per date under daily/. Read or append.
+  async appendDaily(p, date, line) {
+    const dir = path.join(p.dir, "daily");
+    await fs.mkdir(dir, { recursive: true });
+    const file = path.join(dir, `${date}.md`);
+    const stamp = new Date().toISOString().slice(11, 19);
+    await fs.appendFile(file, `- ${stamp} ${line}\n`);
+  }
+
+  async daily({ dir, date, append } = {}) {
+    const p = this.paths(dir);
+    const day = (date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))) ? String(date) : nowIso().slice(0, 10);
+    const dirPath = path.join(p.dir, "daily");
+    const file = path.join(dirPath, `${day}.md`);
+    if (append && String(append).trim()) {
+      await this.appendDaily(p, day, String(append).trim());
+      return { content: [{ type: "text", text: `Appended to daily note ${day}.md for ${p.slug}` }] };
+    }
+    let text;
+    try { text = await fs.readFile(file, "utf8"); }
+    catch { return { content: [{ type: "text", text: `No daily note for ${day} in ${p.slug} yet.` }] }; }
+    return { content: [{ type: "text", text: `# Daily — ${day}\n\n${text}` }] };
   }
 
   async doHandoff({ summary, next_steps, open_questions, active_files, dir }) {
