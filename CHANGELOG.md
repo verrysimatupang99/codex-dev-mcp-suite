@@ -117,3 +117,10 @@
 ### Compatibility
 - Legacy env names remain supported: `LLM_*`, `NINEROUTER_*`, `EMBED_*`, and `RERANK_*`.
 - Offline keyword search remains the default if no model endpoint is configured.
+
+## [1.7.0] - 2026-07-14 — Obsidian-grade vault (feat/obsidian-grade-vault)
+### Added (project-memory)
+- `memory_moc` — generate/refresh Obsidian-style Map of Content (`MOC.md`): all notes as wikilinks, `#tag` index, and backlink graph. Auto-refreshed on every save/delete.
+- `memory_graph` — export note graph (nodes + directed edges from `[[wikilinks]]`) as JSON for external graph views.
+- Auto-bootstrap `.obsidian/` workspace (`app.json` + `workspace.json`) on first save, so the vault opens directly in the Obsidian app with graph view + tag pages.
+- MOC regenerates automatically after `memory_save` and `memory_delete`.
