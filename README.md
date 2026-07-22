@@ -1,4 +1,6 @@
-# Dev MCP Suite
+# Dev MCP Suite 🚀
+
+> **Give your AI Coding Assistant Permanent Brain Power & Zero Memory Loss.**
 
 [![CI](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/codex-dev-mcp-suite.svg)](https://www.npmjs.com/package/codex-dev-mcp-suite)
@@ -7,105 +9,68 @@
 [![node](https://img.shields.io/node/v/codex-dev-mcp-suite.svg)](https://nodejs.org)
 [![Saweria](https://img.shields.io/badge/Saweria-Dukung%20Proyek-FAAE2B?style=flat&logo=saweria&logoColor=black)](https://saweria.co/sijuling)
 
-Published as `codex-dev-mcp-suite` for backward compatibility.
+Published on npm as `codex-dev-mcp-suite`.
 
-Four local, file-based MCP servers for solo developers and vibecoders who keep
-losing context when sessions hit "input too long" / get compacted / restart.
-Stop re-pasting context across sessions.
+---
 
-All servers are **local, dependency-light (only the MCP SDK), and split storage
-per-project** by the working directory. Works with any MCP-capable client
-(Codex CLI, Claude Code, Cursor, Cline, Gemini-compatible launchers, Hermes,
-or any stdio MCP host).
+### 😩 Sound Familiar?
 
-## Quickstart
+> *"You spent 45 minutes explaining your database schema and architecture to your AI agent. Then... **'Context window compacted'** or session restarted. Boom. Your AI forgot everything and started hallucinating variable names."*
 
-Try it in 10 seconds (no clone, no config):
+**Stop re-pasting context over and over.** 
+
+**Dev MCP Suite** is a suite of four local, zero-telemetry MCP (Model Context Protocol) servers built for solo developers and vibe coders. It equips your favorite AI agent (**Codex CLI, Hermes Agent, Google Antigravity, Claude Code, Cursor, Windsurf**) with permanent memory, anti-compaction handoffs, git-safe checkpoints, and offline vector search.
+
+---
+
+### ⚡ Before & After Dev MCP Suite
+
+| Without Dev MCP Suite 🥱 | With Dev MCP Suite ⚡ |
+|---|---|
+| Re-explaining project setup every time session resets | One-command `journal_resume` recovers context instantly |
+| AI forgets architectural decisions and preferences | Obsidian-compatible Markdown vault retains knowledge permanently |
+| Wasted git commits just to save temporary experiments | Git-independent `checkpoint_create` & instant rollback |
+| Accidental secret/API key leaks committed to GitHub | Built-in `pack_audit` flags missing `.gitignore` & leaked keys |
+| Locked into a proprietary hosted backend | 100% Local-first, zero cloud lock-in, zero telemetry |
+
+---
+
+### ⚡ 10-Second Quickstart
+
+Try it right now without cloning or installing:
 
 ```bash
 npx -y -p codex-dev-mcp-suite project-memory-mcp --help
 ```
 
-Local-first by default: no hosted backend, no telemetry. Works offline with
-keyword recall; model/provider config is optional. For strict no-network mode,
-set `MCP_DETERMINISTIC_FALLBACK=true`.
+---
 
-Register all four servers with an MCP client (Codex CLI shown):
+### 🛠️ The 4 Superpowers (MCP Servers)
 
-```toml
-# ~/.codex/config.toml
-[mcp_servers.project-memory]
-command = "npx"
-args = ["-y", "-p", "codex-dev-mcp-suite", "project-memory-mcp"]
-
-[mcp_servers.devjournal]
-command = "npx"
-args = ["-y", "-p", "codex-dev-mcp-suite", "devjournal-mcp"]
-
-[mcp_servers.checkpoint]
-command = "npx"
-args = ["-y", "-p", "codex-dev-mcp-suite", "checkpoint-mcp"]
-
-[mcp_servers.context-pack]
-command = "npx"
-args = ["-y", "-p", "codex-dev-mcp-suite", "context-pack-mcp"]
-```
-
-Inspect any server without starting it:
-
-```bash
-project-memory-mcp --version
-project-memory-mcp --doctor   # config diagnostics; API keys redacted
-```
-
-Other clients (Claude Code, Cursor, Hermes Agent, AGY CLI, Cline, ...): see
-[`docs/clients/`](docs/clients/). Full env reference:
-[`docs/configuration.md`](docs/configuration.md). Data flow:
-[`docs/privacy.md`](docs/privacy.md).
-
-## The four servers
-
-| Server | What it does | Key tools |
+| Server | Superpower | Key Tools |
 |---|---|---|
-| **project-memory** | Searchable Markdown knowledge vault (Obsidian-style notes + on-demand recall). Notes are also exposed as MCP resources. | `memory_save`, `memory_recall`, `memory_list`, `memory_get`, `memory_delete`, `memory_reindex`, `memory_link`, `memory_global_recall`, `memory_dedup`, `memory_moc`, `memory_graph` |
-| **devjournal** | Per-project session timeline + handoff/resume (anti-compaction). | `journal_log`, `journal_handoff`, `journal_resume`, `journal_timeline`, `journal_search`, `journal_clear_handoff` |
-| **checkpoint** | Git-independent file snapshots for safe experimentation. | `checkpoint_create`, `checkpoint_list`, `checkpoint_diff`, `checkpoint_restore`, `checkpoint_delete` |
-| **context-pack** | Token-efficient project briefing & security audit (stack, tree, symbols, search, security audit). | `pack_overview`, `pack_tree`, `pack_outline`, `pack_search`, `pack_audit` |
+| 🧠 **`project-memory`** | **Obsidian-Grade Knowledge Vault**: Persistent Markdown notes, wiki-links (`[[note]]`), MOC generation, and zero-dependency local 384-d vector search (`MCP_LOCAL_EMBED=true`). | `memory_save`, `memory_recall`, `memory_list`, `memory_get`, `memory_link`, `memory_moc`, `memory_graph`, `memory_dedup` |
+| 📜 **`devjournal`** | **Anti-Compaction Session Timeline**: Logs progress, saves handoffs, and restores full context when sessions compact or restart. | `journal_log`, `journal_handoff`, `journal_resume`, `journal_timeline`, `journal_search`, `journal_clear_handoff` |
+| 🛡️ **`checkpoint`** | **Git-Independent Snapshots**: Take 1-second file snapshots before risky AI refactors. Compare diffs and revert instantly without touching your git tree. | `checkpoint_create`, `checkpoint_list`, `checkpoint_diff`, `checkpoint_restore`, `checkpoint_delete` |
+| 🔍 **`context-pack`** | **Codebase Orientation & Security Audit**: Token-efficient project briefings (stack, symbols, tree) plus instant security auditing to catch leaked secrets. | `pack_overview`, `pack_tree`, `pack_outline`, `pack_search`, `pack_audit` |
 
-## Recall quality (project-memory & devjournal)
+---
 
-Recall auto-selects the best available mode:
+### 🧠 Intelligent Local-First Semantic Search
 
-1. **semantic** — if an embeddings endpoint is configured (any OpenAI-compatible `/v1/embeddings`: OpenAI, Ollama, LM Studio, OpenRouter, vLLM, LiteLLM, 9router, ...) or local offline embedding (`MCP_LOCAL_EMBED=true`)
-2. **rerank** — keyword prefilter then an LLM reranker (any OpenAI-compatible chat model)
-3. **keyword** — always-available offline fallback
+`memory_recall` automatically selects the best available search engine on your machine:
 
-All network features degrade gracefully: no endpoint = local/keyword mode, never an error.
-Use the neutral `MCP_*` environment variables for new installs; legacy
-`NINEROUTER_*` and `LLM_*` variables are still supported. See
-[`docs/configuration.md`](docs/configuration.md).
+1. **Local Offline Vector Search (`v1.8.0`)** — Set `MCP_LOCAL_EMBED=true` to use the built-in, zero-dependency 384-dimensional term-frequency hashing vector engine. Sub-millisecond execution, zero network requests, 100% private.
+2. **Remote Embeddings (Optional)** — Connect any OpenAI-compatible `/v1/embeddings` endpoint (OpenAI, Cloudflare Workers AI, Ollama, LM Studio, 9router, OpenRouter).
+3. **LLM Reranking (Optional)** — Hybrid keyword pre-filter followed by LLM reranking for high-precision recall.
+4. **Keyword Fallback** — Always-available offline fallback if no network or API keys exist.
 
-Need hard local-only behavior? Set `MCP_DETERMINISTIC_FALLBACK=true` to disable
-embeddings/rerank even if model keys are present; results are labeled
-`[deterministic]`.
+---
 
-### New in v1.8.0 & v1.7.0
+### 🔌 Plug & Play with Any MCP Client
 
-- **Zero-Dependency Local Offline Embeddings (`v1.8.0`)**: Set `MCP_LOCAL_EMBED=true` to enable pure JS 384-d term-frequency hashing vector search when no remote embedding API key is set. Sub-millisecond execution, zero network calls, zero external npm packages.
-- **Codebase Security Audit (`pack_audit` in `v1.7.0`)**: Scan projects for missing `.gitignore`, hardcoded secrets (`.env`, `.pem`, `id_rsa`), and overly large files.
-- **Obsidian Vault Parity (`v1.7.0`)**: `memory_moc` generates Map of Content index files, `memory_graph` maps backlinks & graph links, and bootstrap `.obsidian` vault structure automatically.
-- **Multi-Client Setup Guides**: Native support & setup guides for [Hermes Agent](docs/clients/hermes.md), [Google Antigravity CLI (AGY)](docs/clients/antigravity.md), [Claude Code](docs/clients/claude-code.md), and [Generic MCP hosts](docs/clients/generic-mcp.md).
-
-## Install
-
-Requires Node.js >= 18.
-
-### Quickest: run via npx (no clone)
-
-Point your MCP client at the published package — no install step needed:
-
+#### 1. Codex CLI (`~/.codex/config.toml`)
 ```toml
-# Codex CLI ~/.codex/config.toml
 [mcp_servers.project-memory]
 command = "npx"
 args = ["-y", "-p", "codex-dev-mcp-suite", "project-memory-mcp"]
@@ -123,239 +88,73 @@ command = "npx"
 args = ["-y", "-p", "codex-dev-mcp-suite", "context-pack-mcp"]
 ```
 
-Or install globally: `npm i -g codex-dev-mcp-suite` → commands
-`project-memory-mcp`, `devjournal-mcp`, `checkpoint-mcp`, `context-pack-mcp`.
-
-### From source
-
-```bash
-git clone https://github.com/<you>/codex-dev-mcp-suite.git
-cd codex-dev-mcp-suite
-# install the MCP SDK in each server
-for s in project-memory checkpoint context-pack devjournal; do (cd "$s" && npm install); done
+#### 2. Hermes Agent (`~/.hermes/config.yaml`)
+```yaml
+mcp_servers:
+  project-memory:
+    command: project-memory-mcp
+    env:
+      MCP_LOCAL_EMBED: "true"
+  devjournal:
+    command: devjournal-mcp
+  checkpoint:
+    command: checkpoint-mcp
+  context-pack:
+    command: context-pack-mcp
 ```
 
-### Register with your MCP client
-
-Client-specific examples:
-
-- [Codex CLI](docs/clients/codex.md)
-- [Claude Code](docs/clients/claude-code.md)
-- [Generic MCP JSON](docs/clients/generic-mcp.md)
-
-**Codex CLI** (`~/.codex/config.toml`):
-
-```toml
-[mcp_servers.project-memory]
-command = "node"
-args = ["/abs/path/codex-dev-mcp-suite/project-memory/server.js"]
-[mcp_servers.project-memory.env]
-MEMORY_VAULT_DIR = "~/.codex/memories/vault"
-# optional recall upgrades (see .env.example and docs/configuration.md)
-# MCP_LLM_BASE_URL = "http://localhost:11434/v1"   # any OpenAI-compatible endpoint
-# MCP_LLM_API_KEY = "..."
-# MCP_RERANK_MODEL = "llama3.1:8b"
-
-[mcp_servers.checkpoint]
-command = "node"
-args = ["/abs/path/codex-dev-mcp-suite/checkpoint/server.js"]
-
-[mcp_servers.context-pack]
-command = "node"
-args = ["/abs/path/codex-dev-mcp-suite/context-pack/server.js"]
-
-[mcp_servers.devjournal]
-command = "node"
-args = ["/abs/path/codex-dev-mcp-suite/devjournal/server.js"]
-[mcp_servers.devjournal.env]
-JOURNAL_DIR = "~/.codex/memories/journal"
+#### 3. Google Antigravity CLI / Cursor / Claude Code (`mcp.json`)
+```json
+{
+  "mcpServers": {
+    "project-memory": { "command": "project-memory-mcp", "env": { "MCP_LOCAL_EMBED": "true" } },
+    "devjournal": { "command": "devjournal-mcp" },
+    "checkpoint": { "command": "checkpoint-mcp" },
+    "context-pack": { "command": "context-pack-mcp" }
+  }
+}
 ```
 
-**Claude Code / Cursor / Cline / other MCP clients** (`mcpServers` JSON): same
-idea — use the npm bin commands (`project-memory-mcp`, `devjournal-mcp`,
-`checkpoint-mcp`, `context-pack-mcp`) or `node /abs/path/<server>/server.js`,
-with optional `env`.
+👉 See detailed client setup guides in [`docs/clients/`](docs/clients/).
 
-## Memory Recall Modes
+---
 
-`memory_recall` supports a `mode` arg (default `"auto"`) that controls fallback behavior:
+### 🚀 Daily Solo Developer Workflow
 
-| Mode | Behavior |
-|---|---|
-| `auto` (default) | Smart: try semantic → keyword → LLM rerank |
-| `semantic` | Require embedding. Returns `isError: true` if no embed key configured |
-| `keyword` | Skip embedding entirely (faster, pure keyword scoring) |
+- **Session Start**: Run `pack_overview` + `journal_resume` + `memory_recall "<topic>"` to get oriented in seconds.
+- **Before Risky Changes**: Run `checkpoint_create` to create a safe recovery point.
+- **While Coding**: Run `memory_save` to store architectural decisions, and `pack_audit` before committing.
+- **Session End / Compaction**: Run `journal_handoff` so your next session picks up right where you left off.
 
-The recall output annotates the active mode for transparency:
+---
 
-```
-Recall for "how do users sign in" in my-project [semantic+rerank]:
-### JWT login flow (id:..., sim:0.603, ...)
-```
+### 📊 Utility CLIs Included
 
-The `+rerank` suffix is appended when LLM rerank is active (MCP_RERANK_ENABLED + key).
-Without embeddings, recall falls back to `[keyword]` or `[keyword+rerank]`.
-With `MCP_DETERMINISTIC_FALLBACK=true`, the mode is always `[deterministic]`.
+Install globally with `npm i -g codex-dev-mcp-suite` to access built-in maintenance tools:
 
-This means you can run codex-dev-mcp-suite with **zero API keys configured** —
-`memory_recall` still works via keyword scoring, just no semantic similarity.
+- `stats` — View total notes, journal activity, and storage stats across all projects (`stats --json`).
+- `prune` — Safely clean up temporary project scratch files (`prune --yes`).
+- `provider-smoke` — Probe configured LLM providers (chat & embedding endpoints) for health and latency.
 
-### New in v1.5.0
+---
 
-`project-memory` now adds a lightweight knowledge-graph layer:
+### 🔒 Privacy & Local-First Philosophy
 
-- `memory_link` resolves wiki-style links like `[[id]]`, `[[title]]`, and `[[project:title]]`, and shows backlinks
-- `memory_global_recall` searches across projects with same-project bias and graceful keyword fallback
-- `memory_dedup` suggests duplicate-note merges without deleting anything
+- **Zero Cloud Backend**: Everything is saved locally as plain Markdown & JSON files on your hard drive (`~/.ai-shared-memory` or project directory).
+- **Zero Telemetry**: No tracking, no user accounts, no phoning home.
+- **Network Isolation Ready**: Set `MCP_DETERMINISTIC_FALLBACK=true` for 100% air-gapped, offline operations.
+- See detailed [privacy and data flow documentation](docs/privacy.md).
 
-Link resolution always prefers the active project first, then falls back globally when appropriate.
+---
 
-## Daily workflow
+### ☕ Support / Donasi
 
-- Session start: `pack_overview` + `journal_resume` + `memory_recall "<topic>"`
-- Before a risky change: `checkpoint_create`
-- While working: `memory_save` (durable facts), `journal_log` (events/blockers)
-- Session end / before compaction: `journal_handoff`
-
-## Optional: import your existing Codex history
-
-`backfill-sessions-v2.mjs` reads `~/.codex/sessions/*.jsonl` and imports each
-session (prompts, plan, commands, files touched) into project-memory + devjournal,
-grouped by project, backdated to the original session time.
-
-```bash
-node backfill-sessions-v2.mjs --dry --min-prompts 2     # preview
-node backfill-sessions-v2.mjs --min-prompts 2           # import
-```
-
-## Stats CLI
-
-A read-only summary of your local memory storage — totals, top projects,
-recent activity, and temp-slug cleanup candidates.
-
-```bash
-npx -y -p codex-dev-mcp-suite stats             # human-readable
-npx -y -p codex-dev-mcp-suite stats --json      # machine-readable
-npx -y -p codex-dev-mcp-suite stats --root /tmp/mem   # different root
-npx -y -p codex-dev-mcp-suite stats --top 5     # trim top lists
-```
-
-Example output:
-
-```
-Dev MCP Suite — stats
-======================
-Storage root: /home/you/.codex/memories
-
-Totals
-------
-  Notes:           89
-  Journal projects:19
-  Checkpoints:     1
-  Distinct projects: 25
-
-Top projects by notes (top 10)
-------------------------
-    24  mrtrickster99-fd1ff0fa
-    14  Coding-17e063ef
-    ...
-
-Temp/cleanup candidates (2)
-------------------------
-  tmp.itbtDn9eB3-b62798fd
-  tmp.iHqM2Uh5K2-8d3660a2
-```
-
-The CLI is a thin wrapper around `lib/stats.js`, which is also importable
-directly from your own scripts. The default storage root is
-`~/.codex/memories`, but `--root` (or the existing `MEMORY_VAULT_DIR` /
-`JOURNAL_DIR` / `CHECKPOINT_DIR` env vars) override it.
-
-
-## Provider Smoke CLI
-
-Verify every configured LLM provider (chat + embeddings) with one command.
-Useful after adding a new API key, or when comparing provider latency.
-
-```bash
-npx -y -p codex-dev-mcp-suite provider-smoke                          # uses process.env
-npx -y -p codex-dev-mcp-suite provider-smoke --env-file ~/secrets.env  # separate secrets file
-npx -y -p codex-dev-mcp-suite provider-smoke --markdown --save-md docs/providers.md
-```
-
-Auto-detects providers from these env vars (highest precedence first):
-
-- **Numbered slots**: `MCP_PROVIDER_PRIMARY` / `_CHAIN2` / `_CHAIN3` / ...
-- **Named env**: `GROQ_*`, `CEREBRAS_*`, `MISTRAL_*`, `OPENROUTER_*`, `OPENAI_*`, `GEMINI_*`, `COHERE_*`, `VOYAGE_*`, `OLLAMA_*`, `ANTHROPIC_*`
-- **Catch-all**: `MCP_LLM_BASE_URL` / `MCP_RERANK_BASE_URL` / `MCP_EMBED_BASE_URL` / `NINEROUTER_URL` / `LLM_BASE_URL` (any OpenAI-compatible endpoint)
-
-For each detected provider, runs:
-- **chat probe** (`/v1/chat/completions`) — if the provider supports it
-- **embed probe** (`/v1/embeddings`) — if the provider supports it
-
-**Inference-only providers** (Groq, Cerebras, Anthropic) skip the embed probe automatically.
-**Non-OpenAI-compatible providers** (Cloudflare Workers AI) require a custom code path in
-`project-memory/embedding.js` — see [docs/providers.md](docs/providers.md).
-
-**No provider assumption is baked in**: the tool only probes what's in your env. Zero-config users
-get an empty matrix; pass `--env-file` to point at a secrets file.
-
-Chat-only providers (Groq, Cerebras) skip the embeddings probe automatically
-— they don't expose `/v1/embeddings`. Embedding-capable providers (Mistral,
-OpenRouter, OpenAI, Ollama, Gemini, Cohere) run both probes.
-
-Example output (Groq + Cerebras, both configured):
-
-```
-[groq]
-  ✓ chat       200 310ms  "OK"
-
-[cerebras]
-  ✓ chat       200 476ms
-```
-
-See [`docs/providers.md`](docs/providers.md) for a saved smoke matrix.
-
-## Prune CLI
-
-Remove temp project slugs (prefix `tmp.`) from vault / journal / checkpoints.
-Default is DRY-RUN — nothing is deleted without `--yes`.
-
-```bash
-npx -y -p codex-dev-mcp-suite prune           # dry-run report
-npx -y -p codex-dev-mcp-suite prune --yes     # actually delete
-npx -y -p codex-dev-mcp-suite prune --json    # machine-readable
-npx -y -p codex-dev-mcp-suite prune --root /tmp/mem   # different root
-```
-
-Safety: refuses to delete any slug that does not start with `tmp.`. Useful
-right after heavy refactors or after imports that left tmp scratch dirs.
-
-For in-session use from an MCP client, the project-memory server exposes a
-`memory_stats` tool that returns the same summary text (or JSON) as the `stats`
-CLI above.
-
-## Tests
-
-```bash
-node run-tests.mjs          # all servers (offline, ~27 tests)
-cd project-memory && npm test
-```
-
-## Privacy
-
-Local-first by default: no hosted backend, no built-in telemetry, no project
-account system. Everything is stored as files on your machine. No data leaves
-your machine unless you explicitly configure an external model/API endpoint for
-rerank or embeddings. See [privacy and data flow](docs/privacy.md). Your
-personal vault/journal/checkpoints are gitignored.
-
-## ☕ Support / Donasi
-
-Jika `codex-dev-mcp-suite` bermanfaat untuk produktivitas pengkodean Anda, dukung pengembangan proyek open-source ini melalui Saweria (QRIS, GoPay, DANA, OVO, ShopeePay):
+Jika `codex-dev-mcp-suite` membantu alur kerja pengkodean Anda dan menghemat waktu Anda, dukung pengembangan proyek open-source ini melalui Saweria (QRIS, GoPay, DANA, OVO, ShopeePay):
 
 [![Saweria](https://img.shields.io/badge/Saweria-Dukung%20Proyek-FAAE2B?style=for-the-badge&logo=saweria&logoColor=black)](https://saweria.co/sijuling)
 
-## License
+---
 
-MIT — see [LICENSE](./LICENSE).
+### 📄 License
+
+MIT © Verry Simatupang — see [LICENSE](./LICENSE).
