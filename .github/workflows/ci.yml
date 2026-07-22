@@ -46,13 +46,13 @@ jobs:
       - name: Install tarball in temp project
         run: |
           set -euo pipefail
+          EXPECTED="$(node -e 'console.log(JSON.parse(require("fs").readFileSync("package.json","utf8")).version)')"
           TARBALL="$(ls codex-dev-mcp-suite-*.tgz)"
           TMP="$(mktemp -d)"
           cp "$TARBALL" "$TMP/"
           cd "$TMP"
           npm init -y >/dev/null
           npm install "./$TARBALL" --no-audit --no-fund
-          EXPECTED="$(node -e "console.log(require('$GITHUB_WORKSPACE/package.json').version)")"
           for bin in project-memory-mcp devjournal-mcp checkpoint-mcp context-pack-mcp; do
             GOT="$(npx --no-install "$bin" --version)"
             echo "$bin -> $GOT"
