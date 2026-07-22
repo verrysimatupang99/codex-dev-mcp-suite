@@ -22,7 +22,7 @@ const client = new McpClient(SERVER, {});
 describe("context-pack", () => {
   it("lists expected tools", async () => {
     const tools = await client.listTools();
-    for (const t of ["pack_overview", "pack_tree", "pack_outline", "pack_search"])
+    for (const t of ["pack_overview", "pack_tree", "pack_outline", "pack_search", "pack_audit"])
       assert(tools.includes(t), `missing ${t}`);
   });
 
@@ -56,6 +56,11 @@ describe("context-pack", () => {
   it("search matches by path substring", async () => {
     const r = await client.callTool("pack_search", { dir: PROJ, query: "auth" });
     assertIncludes(r.text, "src/auth.ts");
+  });
+
+  it("audit flags missing .gitignore or sensitive file", async () => {
+    const r = await client.callTool("pack_audit", { dir: PROJ });
+    assertIncludes(r.text, "Audit:");
   });
 });
 

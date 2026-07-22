@@ -8,7 +8,7 @@
  * window. Detects stack, shows a pruned tree, surfaces key files, and
  * extracts top-level symbols (functions/classes/exports) heuristically.
  *
- * Tools: pack_overview, pack_tree, pack_outline, pack_search
+ * Tools: pack_overview, pack_tree, pack_outline, pack_search, pack_audit
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -19,6 +19,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import fs from "fs/promises";
 import path from "path";
+import { execSync } from "child_process";
 
 const IGNORE = new Set([
   "node_modules", ".git", ".next", "dist", "build", "target", ".venv",
@@ -34,6 +35,32 @@ const KEY_FILES = [
 ];
 const CODE_EXT = new Set([".js", ".mjs", ".ts", ".tsx", ".jsx", ".py", ".go", ".rs", ".java", ".rb", ".php", ".c", ".cpp", ".h", ".sh"]);
 const MAX_FILE_BYTES = 1_500_000;
+const AUDIT_SENSITIVE_PATTERNS = [
+  /^\.env/i, /\.pem$/i, /\.key$/i, /\.p12$/i, /\.pfx$/i,
+  /id_rsa/i, /id_ed25519/i, /id_ecdsa/i, /id_dsa/i,
+  /known_hosts/i, /authorized_keys/i,
+  /credentials/i, /password/i, /secret/i, /token/i,
+  /\.htpasswd/i, /\.netrc/i, /npmrc$/i,
+  /service[_-]?account.*\.json$/i,
+];
+const AUDIT_SECRET_CONTENT_RE = [
+  /sk-[a-zA-Z0-9]{20,}/i,
+  /ghp_[a-zA-Z0-9]{36}/i,
+  /gho_[a-zA-Z0-9]{36}/i,
+  /glpat-[a-zA-Z0-9\-_]{20}/i,
+  /AKIA[0-9A-Z]{16}/i,
+  /AIza[0-9A-Za-z_-]{35}/i,
+  /bearer\s+[a-zA-Z0-9_\-\.]{20,}/i,
+  /api[_-]?key\s*[:=]\s*["']?[a-zA-Z0-9_\-]{16,}/i,
+  /password\s*[:=]\s*["']?[^\s"']{6,}/i,
+];
+const AUDIT_LARGE_WARN = 100_000;
+const AUDIT_LARGE_CRIT = 1_000_000;
+const AUDIT_MAX_SCAN = 16_384;
+
+function isSensitiveName(filename) {
+  return AUDIT_SENSITIVE_PATTERNS.some((pattern) => pattern.test(filename));
+}
 
 function resolveDir(dir) { return path.resolve(dir || process.cwd()); }
 
@@ -155,6 +182,17 @@ class ContextPackServer {
             required: ["query"],
           },
         },
+        {
+          name: "pack_audit",
+          description: "Audit project for security risks, leaked secrets/credentials, missing .gitignore, uncommitted sensitive files, and overly large files.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              strict: { type: "boolean", description: "Flag missing .gitignore as critical instead of warn", default: false },
+            },
+          },
+        },
       ],
     }));
 
@@ -166,6 +204,7 @@ class ContextPackServer {
           case "pack_tree": return await this.tree(args || {});
           case "pack_outline": return await this.outline(args || {});
           case "pack_search": return await this.search(args || {});
+          case "pack_audit": return await this.audit(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
       } catch (e) {
@@ -244,6 +283,139 @@ class ContextPackServer {
     const all = await walk(root, "", [], 0, 10);
     const hits = all.filter((f) => !f.dir && f.rel.toLowerCase().includes(q)).map((f) => f.rel).slice(0, Math.max(1, Math.min(500, limit)));
     return { content: [{ type: "text", text: hits.length ? `Matches for "${query}" (${hits.length}):\n` + hits.map((h) => `  ${h}`).join("\n") : `No path matches for "${query}" in ${root}` }] };
+  }
+
+  
+
+  async audit({ dir, strict = false }) {
+    const root = resolveDir(dir);
+    const findings = [];
+
+    function add(sev, msg, fix) {
+      findings.push({ severity: sev, message: msg, fix });
+    }
+
+    // walk
+    let all = [];
+    try { all = await walk(root, "", [], 0, 6); } catch { /* ignore */ }
+    const files = all.filter((f) => !f.dir);
+
+    // git presence and status
+    let gitRoot = null;
+    try {
+      const g = execSync("git rev-parse --show-toplevel", { cwd: root, encoding: "utf8", timeout: 3000 }).trim();
+      gitRoot = g;
+    } catch { /* not a git repo */ }
+
+    let gitStatus = [];
+    if (gitRoot) {
+      try {
+        const out = execSync("git status --porcelain", { cwd: root, encoding: "utf8", timeout: 5000 });
+        gitStatus = out.trim().split("\n").filter(Boolean).map((line) => {
+          const code = line.slice(0, 2);
+          const file = line.slice(3);
+          return { code, file, untracked: code === "??" };
+        });
+      } catch { /* ignore */ }
+    }
+
+    const statusMap = new Map(gitStatus.map((s) => [s.file, s]));
+
+    // Helpers
+    const isGitTracked = (rel) => {
+      const s = statusMap.get(rel);
+      if (!s) return true; // assume tracked if no status (could be clean tracked)
+      return !s.untracked;
+    };
+    const isIgnored = (rel) => {
+      try {
+        execSync(`git check-ignore -q -- "${rel}"`, { cwd: root, timeout: 2000 });
+        return true;
+      } catch { return false; }
+    };
+
+    // --- Missing critical files ---
+    const hasGitignore = files.some((f) => f.rel === ".gitignore" || path.basename(f.rel) === ".gitignore");
+    const hasEnvExample = files.some((f) => f.rel === ".env.example" || f.rel === ".env.sample" || f.rel === ".env.template");
+    if (gitRoot && !hasGitignore) add(strict ? "critical" : "warn", "No .gitignore found in a git repository.", "Add a .gitignore to prevent accidental commits of build artifacts, secrets, and OS files.");
+    if (!hasEnvExample) add("info", "No .env.example / .env.sample found.", "Add .env.example with dummy values so contributors know which env vars are required.");
+
+    // --- File-by-file scan ---
+    for (const f of files) {
+      const basename = path.basename(f.rel);
+      const abs = path.join(root, f.rel);
+      let stat;
+      try { stat = await fs.stat(abs); } catch { continue; }
+      const size = stat.size;
+      const sensitiveName = isSensitiveName(basename);
+
+      // large files
+      if (size > AUDIT_LARGE_CRIT) {
+        add("critical", `Large file: ${f.rel} (${(size/1e6).toFixed(1)} MB)`, "Consider adding to .gitignore, using Git LFS, or splitting.");
+      } else if (size > AUDIT_LARGE_WARN) {
+        add("warn", `Large file: ${f.rel} (${(size/1e3).toFixed(0)} KB)`, "Consider adding to .gitignore, using Git LFS, or splitting.");
+      }
+
+      // exposed sensitive files
+      if (sensitiveName) {
+        if (gitRoot) {
+          const tracked = isGitTracked(f.rel);
+          const ignored = isIgnored(f.rel);
+          if (tracked && !ignored) {
+            add("critical", `Sensitive file committed to git: ${f.rel}`, "Remove from git history (e.g. git-filter-repo), add to .gitignore, rotate any exposed secrets.");
+          } else if (!tracked) {
+            add("warn", `Sensitive file untracked: ${f.rel}`, "Ensure it is listed in .gitignore and never committed.");
+          } else if (ignored) {
+            add("info", `Sensitive file present but gitignored: ${f.rel}`, "OK — ensure secrets are rotated if previously committed.");
+          }
+        } else {
+          add("warn", `Sensitive file found (not a git repo): ${f.rel}`, "Review permissions and consider encrypting or moving to a secret manager.");
+        }
+      }
+
+      // secret content scan (small text-ish files only)
+      if (!f.dir && (CODE_EXT.has(path.extname(basename)) || [".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".env", ".sh"].includes(path.extname(basename).toLowerCase()) || basename.startsWith(".env"))) {
+        if (size > 0 && size < AUDIT_MAX_SCAN * 4) {
+          let content = "";
+          try {
+            const fd = await fs.open(abs, "r");
+            const buf = Buffer.alloc(Math.min(size, AUDIT_MAX_SCAN));
+            await fd.read(buf, 0, buf.length, 0);
+            await fd.close();
+            content = buf.toString("utf8");
+          } catch { continue; }
+          for (const re of AUDIT_SECRET_CONTENT_RE) {
+            if (re.test(content)) {
+              add("critical", `Possible secret/hardcoded credential in ${f.rel}`, "Move to environment vars, secret manager, or encrypted vault. Rotate leaked value immediately.");
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // --- duplicate / inconsistent configs ---
+    const envFiles = files.filter((f) => path.basename(f.rel).startsWith(".env"));
+    if (envFiles.length > 2) {
+      add("info", `Multiple env files found (${envFiles.map((f) => f.rel).join(", ")})`, "Consolidate variants into .env, .env.local, .env.production. Ensure .gitignore covers all .env* except .env.example.");
+    }
+
+    // --- render ---
+    const icon = { critical: "🔴", warn: "🟡", info: "🟢" };
+    const groups = { critical: [], warn: [], info: [] };
+    for (const f of findings) groups[f.severity].push(f);
+    const lines = [`# Audit: ${path.basename(root)}`, `Path: ${root}`, `Git repo: ${gitRoot ? gitRoot : "no"}`, ``];
+    for (const sev of ["critical", "warn", "info"]) {
+      if (!groups[sev].length) continue;
+      lines.push(`## ${icon[sev]} ${sev.toUpperCase()} (${groups[sev].length})`);
+      for (const f of groups[sev]) {
+        lines.push(`- ${f.message}`);
+        if (f.fix) lines.push(`  → Fix: ${f.fix}`);
+      }
+      lines.push("");
+    }
+    if (!findings.length) lines.push("🟢 No issues detected.");
+    return { content: [{ type: "text", text: lines.join("\n") }] };
   }
 
   async run() {
