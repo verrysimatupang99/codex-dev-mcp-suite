@@ -57,7 +57,7 @@ project-memory-mcp --version
 project-memory-mcp --doctor   # config diagnostics; API keys redacted
 ```
 
-Other clients (Claude Code, Cursor, Cline, ...): see
+Other clients (Claude Code, Cursor, Hermes Agent, AGY CLI, Cline, ...): see
 [`docs/clients/`](docs/clients/). Full env reference:
 [`docs/configuration.md`](docs/configuration.md). Data flow:
 [`docs/privacy.md`](docs/privacy.md).
@@ -66,20 +66,20 @@ Other clients (Claude Code, Cursor, Cline, ...): see
 
 | Server | What it does | Key tools |
 |---|---|---|
-| **project-memory** | Searchable Markdown knowledge vault (Obsidian-style notes + on-demand recall). Notes are also exposed as MCP resources. | `memory_save`, `memory_recall`, `memory_list`, `memory_get`, `memory_delete`, `memory_reindex`, `memory_link`, `memory_global_recall`, `memory_dedup` |
+| **project-memory** | Searchable Markdown knowledge vault (Obsidian-style notes + on-demand recall). Notes are also exposed as MCP resources. | `memory_save`, `memory_recall`, `memory_list`, `memory_get`, `memory_delete`, `memory_reindex`, `memory_link`, `memory_global_recall`, `memory_dedup`, `memory_moc`, `memory_graph` |
 | **devjournal** | Per-project session timeline + handoff/resume (anti-compaction). | `journal_log`, `journal_handoff`, `journal_resume`, `journal_timeline`, `journal_search`, `journal_clear_handoff` |
 | **checkpoint** | Git-independent file snapshots for safe experimentation. | `checkpoint_create`, `checkpoint_list`, `checkpoint_diff`, `checkpoint_restore`, `checkpoint_delete` |
-| **context-pack** | Token-efficient project briefing (stack, tree, symbols, search). | `pack_overview`, `pack_tree`, `pack_outline`, `pack_search` |
+| **context-pack** | Token-efficient project briefing & security audit (stack, tree, symbols, search, security audit). | `pack_overview`, `pack_tree`, `pack_outline`, `pack_search`, `pack_audit` |
 
 ## Recall quality (project-memory & devjournal)
 
 Recall auto-selects the best available mode:
 
-1. **semantic** — if an embeddings endpoint is configured (any OpenAI-compatible `/v1/embeddings`: OpenAI, Ollama, LM Studio, OpenRouter, vLLM, LiteLLM, 9router, ...)
+1. **semantic** — if an embeddings endpoint is configured (any OpenAI-compatible `/v1/embeddings`: OpenAI, Ollama, LM Studio, OpenRouter, vLLM, LiteLLM, 9router, ...) or local offline embedding (`MCP_LOCAL_EMBED=true`)
 2. **rerank** — keyword prefilter then an LLM reranker (any OpenAI-compatible chat model)
 3. **keyword** — always-available offline fallback
 
-All network features degrade gracefully: no endpoint = keyword mode, never an error.
+All network features degrade gracefully: no endpoint = local/keyword mode, never an error.
 Use the neutral `MCP_*` environment variables for new installs; legacy
 `NINEROUTER_*` and `LLM_*` variables are still supported. See
 [`docs/configuration.md`](docs/configuration.md).
@@ -87,6 +87,13 @@ Use the neutral `MCP_*` environment variables for new installs; legacy
 Need hard local-only behavior? Set `MCP_DETERMINISTIC_FALLBACK=true` to disable
 embeddings/rerank even if model keys are present; results are labeled
 `[deterministic]`.
+
+### New in v1.8.0 & v1.7.0
+
+- **Zero-Dependency Local Offline Embeddings (`v1.8.0`)**: Set `MCP_LOCAL_EMBED=true` to enable pure JS 384-d term-frequency hashing vector search when no remote embedding API key is set. Sub-millisecond execution, zero network calls, zero external npm packages.
+- **Codebase Security Audit (`pack_audit` in `v1.7.0`)**: Scan projects for missing `.gitignore`, hardcoded secrets (`.env`, `.pem`, `id_rsa`), and overly large files.
+- **Obsidian Vault Parity (`v1.7.0`)**: `memory_moc` generates Map of Content index files, `memory_graph` maps backlinks & graph links, and bootstrap `.obsidian` vault structure automatically.
+- **Multi-Client Setup Guides**: Native support & setup guides for [Hermes Agent](docs/clients/hermes.md), [Google Antigravity CLI (AGY)](docs/clients/antigravity.md), [Claude Code](docs/clients/claude-code.md), and [Generic MCP hosts](docs/clients/generic-mcp.md).
 
 ## Install
 
