@@ -8,7 +8,7 @@ import { spawn } from "child_process";
 export class McpClient {
   constructor(serverPath, env = {}) {
     this.serverPath = serverPath;
-    this.env = { ...process.env, ...env };
+    this.env = { MCP_DISABLE_UPDATE_CHECK: "1", ...process.env, ...env };
     this.proc = null;
     this.buf = "";
     this.pending = new Map();
@@ -47,7 +47,7 @@ export class McpClient {
   _send(obj) { this.proc.stdin.write(JSON.stringify(obj) + "\n"); }
   _notify(method, params) { this._send({ jsonrpc: "2.0", method, params }); }
 
-  _rpc(method, params, timeoutMs = 30000) {
+  _rpc(method, params, timeoutMs = 60000) {
     const id = this.nextId++;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
