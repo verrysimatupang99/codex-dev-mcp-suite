@@ -19,6 +19,7 @@ import http from "http";
 import https from "https";
 import { URL } from "url";
 import { deterministicEnabled } from "./env.js";
+import { generateLocalVectors } from "./local-embed.js";
 
 /** Read env at runtime (not module-load time) so tests can override and config is dynamic). */
 function readEnv() {
@@ -30,6 +31,10 @@ function readEnv() {
   };
 }
 
+export function localEmbedEnabled() {
+  return process.env.MCP_LOCAL_EMBED === "true" || process.env.LOCAL_EMBED === "true";
+}
+
 /**
  * Resolve what retrieval mode memory_recall will use, given current env.
  * Returns one of: "deterministic" | "semantic" | "keyword".
@@ -38,17 +43,20 @@ function readEnv() {
 export function recallMode() {
   if (deterministicEnabled()) return "deterministic";
   const { key } = readEnv();
-  return key ? "semantic" : "keyword";
+  if (key) return "semantic";
+  if (localEmbedEnabled()) return "semantic (local)";
+  return "keyword";
 }
 
 export function embeddingConfig() {
   const { base, key, model } = readEnv();
+  const isLocal = !key && localEmbedEnabled();
   return {
-    base,
-    model,
-    enabled: Boolean(key) && !deterministicEnabled(),
+    base: key ? base : (isLocal ? "local-offline" : base),
+    model: key ? model : (isLocal ? "local-384d-tf-ngram" : model),
+    enabled: Boolean(key || isLocal) && !deterministicEnabled(),
     deterministic: deterministicEnabled(),
-    endpoint: isCloudflareURL(base) ? "cloudflare" : "openai-compatible",
+    endpoint: key ? (isCloudflareURL(base) ? "cloudflare" : "openai-compatible") : (isLocal ? "local-offline" : "none"),
     mode: recallMode(),
   };
 }
@@ -136,10 +144,17 @@ async function embedCloudflare(inputs) {
 export async function embed(inputs) {
   if (deterministicEnabled()) return [];
   const { base, key } = readEnv();
-  if (!key) return [];
   const arr = Array.isArray(inputs) ? inputs : [inputs];
-  if (isCloudflareURL(base)) return await embedCloudflare(arr);
-  return await embedOpenAI(arr);
+  if (!key) {
+    if (localEmbedEnabled()) return generateLocalVectors(arr);
+    return [];
+  }
+  try {
+    const res = isCloudflareURL(base) ? await embedCloudflare(arr) : await embedOpenAI(arr);
+    if (res && res.length) return res;
+  } catch { /* fallback to local if enabled */ }
+  if (localEmbedEnabled()) return generateLocalVectors(arr);
+  return [];
 }
 
 export async function embedOne(text) {
