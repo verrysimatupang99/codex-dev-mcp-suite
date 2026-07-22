@@ -22,7 +22,7 @@ const client = new McpClient(SERVER, {});
 describe("context-pack", () => {
   it("lists expected tools", async () => {
     const tools = await client.listTools();
-    for (const t of ["pack_overview", "pack_tree", "pack_outline", "pack_search", "pack_audit"])
+    for (const t of ["pack_overview", "pack_tree", "pack_outline", "pack_search", "pack_audit", "pack_impact", "pack_guard"])
       assert(tools.includes(t), `missing ${t}`);
   });
 
@@ -61,6 +61,17 @@ describe("context-pack", () => {
   it("audit flags missing .gitignore or sensitive file", async () => {
     const r = await client.callTool("pack_audit", { dir: PROJ });
     assertIncludes(r.text, "Audit:");
+  });
+
+  it("impact calculates caller blast radius", async () => {
+    const r = await client.callTool("pack_impact", { dir: PROJ, targetFile: "src/auth.ts" });
+    assertIncludes(r.text, "Impact Blast-Radius:");
+    assertIncludes(r.text, "src/auth.ts");
+  });
+
+  it("guard runs toolchain checks", async () => {
+    const r = await client.callTool("pack_guard", { dir: PROJ });
+    assertIncludes(r.text, "Guard Pre-flight Diagnostics");
   });
 });
 

@@ -193,6 +193,30 @@ class ContextPackServer {
             },
           },
         },
+        {
+          name: "pack_impact",
+          description: "Analyze dependency blast-radius and callers for a specific file to prevent breaking downstream code.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              targetFile: { type: "string", description: "Relative path to target file (e.g. 'lib/stats.js')" },
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              maxDepth: { type: "number", description: "Traversal depth", default: 3 },
+            },
+            required: ["targetFile"],
+          },
+        },
+        {
+          name: "pack_guard",
+          description: "Execute self-healing diagnostic pre-flight checks (typecheck, lint, test) and return structured findings.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              checkType: { type: "string", description: "Check type: 'all' | 'typecheck' | 'test' | 'lint'", default: "all" },
+            },
+          },
+        },
       ],
     }));
 
@@ -205,6 +229,8 @@ class ContextPackServer {
           case "pack_outline": return await this.outline(args || {});
           case "pack_search": return await this.search(args || {});
           case "pack_audit": return await this.audit(args || {});
+          case "pack_impact": return await this.impact(args || {});
+          case "pack_guard": return await this.guard(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
       } catch (e) {
@@ -415,6 +441,122 @@ class ContextPackServer {
       lines.push("");
     }
     if (!findings.length) lines.push("🟢 No issues detected.");
+    return { content: [{ type: "text", text: lines.join("\n") }] };
+  }
+
+  async impact({ targetFile, dir, maxDepth = 3 }) {
+    const root = resolveDir(dir);
+    if (!targetFile) throw new Error("targetFile is required");
+    const normTarget = targetFile.replace(/\\/g, "/").replace(/^\.\//, "");
+    const all = await walk(root, "", [], 0, 8);
+    const codeFiles = all.filter((f) => !f.dir && CODE_EXT.has(path.extname(f.rel)));
+
+    const importMap = new Map();
+    const reverseMap = new Map();
+
+    for (const f of codeFiles) {
+      const abs = path.join(root, f.rel);
+      try {
+        const content = await fs.readFile(abs, "utf8");
+        const imports = [];
+        const re = /(?:import|export)\s+.*?\s+from\s+["']([^"']+)["']|require\(["']([^"']+)["']\)|import\(["']([^"']+)["']\)/g;
+        let match;
+        while ((match = re.exec(content)) !== null) {
+          const spec = match[1] || match[2] || match[3];
+          if (spec && (spec.startsWith(".") || spec.startsWith("/"))) {
+            const dirName = path.dirname(f.rel);
+            const resolvedRel = path.normalize(path.join(dirName, spec)).replace(/\\/g, "/");
+            imports.push(resolvedRel);
+          }
+        }
+        importMap.set(f.rel.replace(/\\/g, "/"), imports);
+      } catch {}
+    }
+
+    for (const [importer, importedList] of importMap.entries()) {
+      for (const imp of importedList) {
+        for (const f of codeFiles) {
+          const fRel = f.rel.replace(/\\/g, "/");
+          const fRelNoExt = fRel.replace(/\.[^/.]+$/, "");
+          if (fRel === imp || fRelNoExt === imp || fRelNoExt === imp.replace(/\/index$/, "")) {
+            if (!reverseMap.has(fRel)) reverseMap.set(fRel, []);
+            reverseMap.get(fRel).push(importer);
+          }
+        }
+      }
+    }
+
+    const directImporters = reverseMap.get(normTarget) || [];
+    const directImports = importMap.get(normTarget) || [];
+
+    const lines = [
+      `# Impact Blast-Radius: ${normTarget}`,
+      `Project: ${root}`,
+      ``,
+      `## 🎯 Direct Importers / Callers (${directImporters.length})`,
+      ...(directImporters.length ? directImporters.map((f) => `- \`${f}\``) : ["- None (No other file directly imports this file)"]),
+      ``,
+      `## 📦 Outbound Imports (${directImports.length})`,
+      ...(directImports.length ? directImports.map((f) => `- \`${f}\``) : ["- None"]),
+      ``,
+      `## ⚠️ Calculated Blast-Radius Score: ${directImporters.length > 5 ? "HIGH 🔴" : directImporters.length > 2 ? "MEDIUM 🟡" : "LOW 🟢"}`
+    ];
+
+    return { content: [{ type: "text", text: lines.join("\n") }] };
+  }
+
+  async guard({ dir, checkType = "all" }) {
+    const root = resolveDir(dir);
+    const pkgPath = path.join(root, "package.json");
+    let hasPkg = false;
+    let pkg = {};
+    try {
+      pkg = JSON.parse(await fs.readFile(pkgPath, "utf8"));
+      hasPkg = true;
+    } catch {}
+
+    const runScript = (cmd, label) => {
+      try {
+        const out = execSync(cmd, { cwd: root, encoding: "utf8", timeout: 15000, stdio: ["pipe", "pipe", "pipe"] });
+        return { label, status: "PASS 🟢", output: out.slice(0, 500) };
+      } catch (e) {
+        const errOut = (e.stdout || "") + "\n" + (e.stderr || "");
+        return { label, status: "FAIL 🔴", output: errOut.slice(0, 1000) };
+      }
+    };
+
+    const results = [];
+    if (hasPkg && pkg.scripts) {
+      if ((checkType === "all" || checkType === "typecheck") && (pkg.scripts.typecheck || pkg.scripts["check-types"])) {
+        results.push(runScript("npm run " + (pkg.scripts.typecheck ? "typecheck" : "check-types"), "Typecheck"));
+      } else if (hasPkg && await fs.access(path.join(root, "tsconfig.json")).then(() => true).catch(() => false)) {
+        results.push(runScript("npx tsc --noEmit", "Typecheck (tsc)"));
+      }
+
+      if ((checkType === "all" || checkType === "lint") && pkg.scripts.lint) {
+        results.push(runScript("npm run lint", "Linter"));
+      }
+
+      if ((checkType === "all" || checkType === "test") && pkg.scripts.test) {
+        results.push(runScript("npm test", "Test Suite"));
+      }
+    }
+
+    const lines = [`# Guard Pre-flight Diagnostics: ${path.basename(root)}`, `Path: ${root}`, ``];
+    if (!results.length) {
+      lines.push("ℹ️ No build/test/lint scripts detected in project toolchain.");
+    } else {
+      for (const r of results) {
+        lines.push(`## ${r.label}: ${r.status}`);
+        if (r.output) {
+          lines.push("```");
+          lines.push(r.output.trim());
+          lines.push("```");
+        }
+        lines.push("");
+      }
+    }
+
     return { content: [{ type: "text", text: lines.join("\n") }] };
   }
 
