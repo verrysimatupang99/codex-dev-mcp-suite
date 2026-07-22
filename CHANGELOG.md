@@ -32,6 +32,12 @@
 
 # Changelog
 
+## 3.1.1 - 2026-07-22 — CI/CD Hardening & Complete Wizard Tracking 🛡️
+
+### Fixed
+- Verified 100% GREEN GitHub Actions CI status across Node 18.x, 20.x, and 22.x matrix.
+- Ensure all installer wizard binaries (`bin/init.mjs`, `bin/ui.mjs`, `lib/init-wizard.js`) are fully tracked and published.
+
 ## 3.1.0 - 2026-07-22 — Interactive Installer Wizard & CI Suite 🛠️
 
 ### Added
