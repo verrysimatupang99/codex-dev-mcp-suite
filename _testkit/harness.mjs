@@ -18,6 +18,7 @@ export class McpClient {
   async start() {
     this.proc = spawn("node", [this.serverPath], { env: this.env, stdio: ["pipe", "pipe", "ignore"] });
     this.proc.stdout.on("data", (d) => this._onData(d.toString()));
+    await new Promise((r) => setTimeout(r, 100));
     await this._rpc("initialize", {
       protocolVersion: "2024-11-05",
       capabilities: {},
