@@ -40,14 +40,11 @@ jobs:
         with:
           node-version: 20.x
 
-      - name: Pack tarball
-        run: npm pack --silent
-
-      - name: Install tarball in temp project
+      - name: Test package tarball install
         run: |
           set -euo pipefail
           EXPECTED="$(node -e 'console.log(JSON.parse(require("fs").readFileSync("package.json","utf8")).version)')"
-          TARBALL="$(ls codex-dev-mcp-suite-*.tgz)"
+          TARBALL="$(npm pack)"
           TMP="$(mktemp -d)"
           cp "$TARBALL" "$TMP/"
           cd "$TMP"
