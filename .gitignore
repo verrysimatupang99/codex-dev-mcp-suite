@@ -10,3 +10,4 @@ vault/
 journal/
 checkpoints/
 .backfill*-state.json
+*.tgz
