@@ -32,6 +32,16 @@
 
 # Changelog
 
+## 3.1.0 - 2026-07-22 — Interactive Installer Wizard & CI Suite 🛠️
+
+### Added
+- **`npx codex-dev-mcp-suite init` (Auto-Config Installer Wizard)**:
+  - Interactive CLI wizard (`lib/init-wizard.js` & `bin/init.mjs`) that automatically detects installed AI clients (Codex CLI, Claude Code, Cursor, Windsurf, Hermes Agent, Antigravity CLI) and injects the 4 MCP server configurations into their respective config files.
+- **GitHub Actions Smoke Expansion**:
+  - Extended `.github/workflows/ci.yml` package-smoke test to verify all 6 executable binaries and the `init` wizard.
+- **Real-World Multi-Agent Vibe Coding Guide (`examples/multi-agent-vibe-coding.md`)**:
+  - Sample workflows demonstrating how to combine Antigravity, Hermes, Claude Code, and Codex CLI using swarm streams, checkpoints, and impact prediction.
+
 ## 3.0.0 - 2026-07-22 — The Autonomous Agent OS Edition (God-Tier) 🌌
 
 ### Added

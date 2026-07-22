@@ -58,3 +58,4 @@ jobs:
             echo "$bin -> $GOT"
             test "$GOT" = "$EXPECTED"
           done
+          npx --no-install init --dry-run

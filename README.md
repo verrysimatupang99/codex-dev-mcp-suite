@@ -37,7 +37,13 @@ Published on npm as `codex-dev-mcp-suite`.
 
 ### ⚡ 10-Second Quickstart
 
-Try it right now without cloning or installing:
+Automatically configure all installed AI tools (Codex CLI, Claude Code, Cursor, Windsurf, Hermes, Antigravity) with 1 command:
+
+```bash
+npx -y codex-dev-mcp-suite init
+```
+
+Or test a single server right now without installing:
 
 ```bash
 npx -y -p codex-dev-mcp-suite project-memory-mcp --help
