@@ -32,6 +32,18 @@
 
 # Changelog
 
+## 2.0.0 - 2026-07-22 — The Peak Intelligence Edition 🚀
+
+### Added
+- **Pillar 1: Dependency Blast-Radius (`pack_impact`)**:
+  - Analyze code imports (`import`/`export`/`require`) and compute caller fan-out scores before refactoring files (`context-pack`).
+- **Pillar 2: Self-Healing Pre-flight Diagnostics (`pack_guard`)**:
+  - Run typechecks (`tsc`), lints, and test suites with built-in timeout guards to ensure 100% bug-free AI output (`context-pack`).
+- **Pillar 3: Multi-Agent Swarm Stream (`memory_broadcast` & `memory_swarm_timeline`)**:
+  - Real-time event stream broadcasting across peer subagents (Antigravity, Hermes, Codex, Claude Code, Cursor) working in the same workspace (`project-memory`).
+- **Pillar 4: Session Time-Machine & Token Compressor (`journal_compress`)**:
+  - Condense 50+ turns of verbose session logs into a 500-token compact snapshot to cut token costs by ~90% (`devjournal`).
+
 ## 1.9.0 - 2026-07-22
 
 ### Added

@@ -35,6 +35,7 @@ import { ensureGraphState, resolveLink, loadNoteBody } from "./graph.js";
 import { loadGlobalNotes } from "./global-index.js";
 import { findDuplicateCandidates } from "./dedup.js";
 import { computeStats, formatText, formatJson } from "../lib/stats.js";
+import { broadcastSwarmEvent, getSwarmTimeline } from "./swarm.js";
 
 const VAULT_ROOT =
   process.env.MEMORY_VAULT_DIR ||
@@ -406,6 +407,33 @@ class ProjectMemoryServer {
             },
           },
         },
+        {
+          name: "memory_broadcast",
+          description: "Broadcast an event/finding to the real-time multi-agent swarm stream for peer subagents in the workspace.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              eventType: { type: "string", description: "Event type: 'finding' | 'bug' | 'decision' | 'status'", default: "finding" },
+              topic: { type: "string", description: "Topic/category" },
+              payload: { type: "object", description: "Structured event payload" },
+              agentName: { type: "string", description: "Name/role of emitting agent", default: "agent" },
+            },
+            required: ["topic"],
+          },
+        },
+        {
+          name: "memory_swarm_timeline",
+          description: "Query real-time multi-agent swarm event stream in the shared workspace.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              limit: { type: "number", description: "Max events to return", default: 20 },
+              eventType: { type: "string", description: "Filter by eventType" },
+            },
+          },
+        },
       ],
     }));
 
@@ -425,6 +453,8 @@ class ProjectMemoryServer {
           case "memory_stats": return await this.stats(args || {});
           case "memory_moc": return await this.moc(args || {});
           case "memory_graph": return await this.graph(args || {});
+          case "memory_broadcast": return await this.broadcast(args || {});
+          case "memory_swarm_timeline": return await this.swarmTimeline(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
@@ -809,6 +839,28 @@ class ProjectMemoryServer {
     if (ensured.changed) await this.saveIndex(p, ensured.index);
     const g = this.buildGraph(ensured.index);
     return { content: [{ type: "text", text: JSON.stringify(g, null, 2) }] };
+  }
+
+  async broadcast({ dir, eventType = "finding", topic, payload, agentName = "agent" } = {}) {
+    const p = this.paths(dir);
+    const event = await broadcastSwarmEvent(p.projectDir, { eventType, topic, payload, agentName });
+    return { content: [{ type: "text", text: `Broadcasted swarm event ${event.id} [${event.eventType}] topic: "${topic}" by ${agentName}` }] };
+  }
+
+  async swarmTimeline({ dir, limit = 20, eventType = null } = {}) {
+    const p = this.paths(dir);
+    const events = await getSwarmTimeline(p.projectDir, { limit, eventType });
+    if (!events.length) {
+      return { content: [{ type: "text", text: `No swarm events recorded yet for project ${p.slug}.` }] };
+    }
+    const lines = [`# Swarm Stream: ${p.slug}`, `Total Events: ${events.length}`, ``];
+    for (const e of events) {
+      lines.push(`- **[${e.timestamp}] (${e.agentName})** \`${e.eventType}\` — **${e.topic}**`);
+      if (e.payload && Object.keys(e.payload).length > 0) {
+        lines.push(`  \`\`\`json\n  ${JSON.stringify(e.payload)}\n  \`\`\``);
+      }
+    }
+    return { content: [{ type: "text", text: lines.join("\n") }] };
   }
 
   async run() {

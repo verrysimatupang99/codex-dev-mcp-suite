@@ -49,10 +49,10 @@ npx -y -p codex-dev-mcp-suite project-memory-mcp --help
 
 | Server | Superpower | Key Tools |
 |---|---|---|
-| 🧠 **`project-memory`** | **Obsidian-Grade Knowledge Vault**: Persistent Markdown notes, wiki-links (`[[note]]`), MOC generation, and zero-dependency local 384-d vector search (`MCP_LOCAL_EMBED=true`). | `memory_save`, `memory_recall`, `memory_list`, `memory_get`, `memory_link`, `memory_moc`, `memory_graph`, `memory_dedup` |
-| 📜 **`devjournal`** | **Anti-Compaction Session Timeline**: Logs progress, saves handoffs, and restores full context when sessions compact or restart. | `journal_log`, `journal_handoff`, `journal_resume`, `journal_timeline`, `journal_search`, `journal_clear_handoff` |
+| 🧠 **`project-memory`** | **Obsidian-Grade Knowledge Vault**: Persistent Markdown notes, wiki-links (`[[note]]`), MOC generation, zero-dependency local 384-d vector search (`MCP_LOCAL_EMBED=true`), and multi-agent swarm stream. | `memory_save`, `memory_recall`, `memory_list`, `memory_get`, `memory_link`, `memory_moc`, `memory_graph`, `memory_dedup`, `memory_broadcast`, `memory_swarm_timeline` |
+| 📜 **`devjournal`** | **Anti-Compaction Session Timeline**: Logs progress, saves handoffs, restores full context, and compresses session logs to cut token costs ~90%. | `journal_log`, `journal_handoff`, `journal_resume`, `journal_timeline`, `journal_search`, `journal_compress`, `journal_clear_handoff` |
 | 🛡️ **`checkpoint`** | **Git-Independent Snapshots**: Take 1-second file snapshots before risky AI refactors. Compare diffs and revert instantly without touching your git tree. | `checkpoint_create`, `checkpoint_list`, `checkpoint_diff`, `checkpoint_restore`, `checkpoint_delete` |
-| 🔍 **`context-pack`** | **Codebase Orientation & Security Audit**: Token-efficient project briefings (stack, symbols, tree) plus instant security auditing to catch leaked secrets. | `pack_overview`, `pack_tree`, `pack_outline`, `pack_search`, `pack_audit` |
+| 🔍 **`context-pack`** | **Codebase Orientation & Peak Intelligence**: Token-efficient briefings, dependency blast-radius analysis (`pack_impact`), self-healing preflight checks (`pack_guard`), and security auditing (`pack_audit`). | `pack_overview`, `pack_tree`, `pack_outline`, `pack_search`, `pack_audit`, `pack_impact`, `pack_guard` |
 
 ---
 

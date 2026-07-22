@@ -33,6 +33,7 @@ import os from "os";
 import crypto from "crypto";
 import { rerank, rerankConfig } from "./rerank.js";
 import { deterministicEnabled } from "./env.js";
+import { compressJournalEntries } from "./compress.js";
 
 const ROOT =
   process.env.JOURNAL_DIR ||
@@ -192,6 +193,18 @@ class DevJournalServer {
             },
           },
         },
+        {
+          name: "journal_compress",
+          description: "Compress and summarize verbose journal timeline entries into a ultra-compact (~500 token) snapshot to prevent context window compaction traps.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              limit: { type: "number", description: "Max entries to process", default: 50 },
+              maxTokens: { type: "number", description: "Target max tokens", default: 500 },
+            },
+          },
+        },
       ],
     }));
 
@@ -207,6 +220,7 @@ class DevJournalServer {
           case "journal_clear_handoff": return await this.clearHandoff(args || {});
           case "journal_daily": return await this.daily(args || {});
           case "initialize_agent_session": return await this.initializeAgent(args || {});
+          case "journal_compress": return await this.compress(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
       } catch (e) {
@@ -372,6 +386,12 @@ class DevJournalServer {
     const content = greeting + resumeData.content[0].text + rules;
     
     return { content: [{ type: "text", text: content }] };
+  }
+
+  async compress({ dir, limit = 50, maxTokens = 500 }) {
+    const p = this.paths(dir);
+    const res = await compressJournalEntries(p.dir, p.slug, { limit, maxTokens });
+    return { content: [{ type: "text", text: res.compressedText }] };
   }
 
   async run() {
