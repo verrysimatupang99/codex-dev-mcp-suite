@@ -54,8 +54,8 @@ jobs:
           npm init -y >/dev/null
           npm install "./$TARBALL" --no-audit --no-fund
           for bin in project-memory-mcp devjournal-mcp checkpoint-mcp context-pack-mcp; do
-            GOT="$(npx --no-install "$bin" --version)"
+            GOT="$(./node_modules/.bin/"$bin" --version)"
             echo "$bin -> $GOT"
             test "$GOT" = "$EXPECTED"
           done
-          npx --no-install init --dry-run
+          ./node_modules/.bin/init --dry-run
