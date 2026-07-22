@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { checkForUpdates } from "../lib/update-check.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -41,6 +42,9 @@ function doctorLines(meta) {
 }
 
 export function handleCliMeta(meta) {
+  // Non-blocking update check on startup (cached 24h, logged to stderr)
+  checkForUpdates().catch(() => {});
+
   const argv = process.argv.slice(2);
   if (argv.includes("-v") || argv.includes("--version")) {
     process.stdout.write(`${pkgVersion()}\n`);

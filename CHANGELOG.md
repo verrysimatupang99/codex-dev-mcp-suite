@@ -32,6 +32,14 @@
 
 # Changelog
 
+## 1.9.0 - 2026-07-22
+
+### Added
+- **Non-Blocking Upstream Update Checker (`lib/update-check.js`)**:
+  - Automatically queries npm registry in the background once every 24 hours (cached locally).
+  - Notifies users via `stderr` when a new version of `codex-dev-mcp-suite` is published to upstream npm.
+  - Safe for stdio MCP JSON-RPC protocol transport; sub-millisecond execution, zero startup latency.
+
 ## 1.4.0 - 2026-06-17
 
 ### Added
