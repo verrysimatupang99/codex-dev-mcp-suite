@@ -53,9 +53,9 @@ jobs:
           cd "$TMP"
           npm init -y >/dev/null
           npm install "./$TARBALL" --no-audit --no-fund
-          for bin in project-memory-mcp devjournal-mcp checkpoint-mcp context-pack-mcp; do
-            GOT="$(./node_modules/.bin/"$bin" --version)"
+          for bin in project-memory devjournal checkpoint context-pack; do
+            GOT="$(node "./node_modules/codex-dev-mcp-suite/bin/$bin.mjs" --version)"
             echo "$bin -> $GOT"
             test "$GOT" = "$EXPECTED"
           done
-          ./node_modules/.bin/init --dry-run
+          node "./node_modules/codex-dev-mcp-suite/bin/init.mjs" --dry-run
