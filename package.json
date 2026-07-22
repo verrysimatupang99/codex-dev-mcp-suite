@@ -1,6 +1,6 @@
 {
   "name": "codex-dev-mcp-suite",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Four local, file-based MCP servers for solo devs/vibecoders: persistent project memory, session handoff/resume, git-independent file checkpoints, and token-efficient project briefings. Works with any MCP client.",
   "type": "module",
   "license": "MIT",
@@ -35,7 +35,8 @@
     "context-pack-mcp": "bin/context-pack.mjs",
     "stats": "bin/stats.mjs",
     "prune": "bin/prune.mjs",
-    "provider-smoke": "bin/provider-smoke.mjs"
+    "provider-smoke": "bin/provider-smoke.mjs",
+    "mcp-ui": "bin/ui.mjs"
   },
   "scripts": {
     "test": "node run-tests.mjs",

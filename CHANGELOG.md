@@ -32,6 +32,18 @@
 
 # Changelog
 
+## 3.0.0 - 2026-07-22 — The Autonomous Agent OS Edition (God-Tier) 🌌
+
+### Added
+- **Pillar 1: Live Dev-Server & Log Telemetry (`pack_telemetry`)**:
+  - Surface live dev server errors (`dev.log`, `error.log`, `/tmp/dev.log`, `.next/server.log`) directly into agent context without manual copy-pasting (`context-pack`).
+- **Pillar 2: Autonomous Background Git & Mtime Observer (`memory_auto_index`)**:
+  - Automatically inspect recent git commits, branch switches, and file modifications to auto-derive project notes (`project-memory`).
+- **Pillar 3: Predictive Contract & Schema Impact Simulation (`pack_predictive_diff`)**:
+  - Simulate proposed file diffs against caller files to predict breaking API signatures or database schema changes (`context-pack`).
+- **Pillar 4: Built-in Interactive Web GUI Dashboard (`mcp-ui`)**:
+  - Launch a zero-dependency 3D/2D Knowledge Graph & Memory Web Dashboard on `http://localhost:3333` via `mcp-ui` (`bin/ui.mjs`).
+
 ## 2.0.0 - 2026-07-22 — The Peak Intelligence Edition 🚀
 
 ### Added

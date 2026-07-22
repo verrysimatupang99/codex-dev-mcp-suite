@@ -36,6 +36,7 @@ import { loadGlobalNotes } from "./global-index.js";
 import { findDuplicateCandidates } from "./dedup.js";
 import { computeStats, formatText, formatJson } from "../lib/stats.js";
 import { broadcastSwarmEvent, getSwarmTimeline } from "./swarm.js";
+import { runAutoIndexer } from "./auto-indexer.js";
 
 const VAULT_ROOT =
   process.env.MEMORY_VAULT_DIR ||
@@ -434,6 +435,17 @@ class ProjectMemoryServer {
             },
           },
         },
+        {
+          name: "memory_auto_index",
+          description: "Run autonomous background observer to inspect git commits, branch switches, and file modifications to auto-derive project notes.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              dryRun: { type: "boolean", description: "Preview derived knowledge without saving", default: false },
+            },
+          },
+        },
       ],
     }));
 
@@ -455,6 +467,7 @@ class ProjectMemoryServer {
           case "memory_graph": return await this.graph(args || {});
           case "memory_broadcast": return await this.broadcast(args || {});
           case "memory_swarm_timeline": return await this.swarmTimeline(args || {});
+          case "memory_auto_index": return await this.autoIndex(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
@@ -861,6 +874,21 @@ class ProjectMemoryServer {
       }
     }
     return { content: [{ type: "text", text: lines.join("\n") }] };
+  }
+
+  async autoIndex({ dir, dryRun = false } = {}) {
+    const p = this.paths(dir);
+    const res = await runAutoIndexer(dir, { dryRun });
+    if (!dryRun && res.summaryText) {
+      await this.save({
+        title: `Auto-Index ${new Date().toISOString().substring(0, 10)} (${res.branch})`,
+        content: res.summaryText,
+        dir,
+        tags: ["auto-index", "git"],
+        kind: "auto-derived"
+      });
+    }
+    return { content: [{ type: "text", text: res.summaryText + (dryRun ? "\n\n(Dry Run — note not saved)" : "\n\n(Saved to project memory vault)") }] };
   }
 
   async run() {

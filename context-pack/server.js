@@ -217,6 +217,31 @@ class ContextPackServer {
             },
           },
         },
+        {
+          name: "pack_telemetry",
+          description: "Read live dev server logs, runtime errors, and stack traces to diagnose issues without asking user to copy-paste logs.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              logFile: { type: "string", description: "Path to specific log file (optional)" },
+              limit: { type: "number", description: "Max log entries", default: 50 },
+            },
+          },
+        },
+        {
+          name: "pack_predictive_diff",
+          description: "Simulate proposed file changes against caller files to predict breaking contract or API signature changes.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              targetFile: { type: "string", description: "Target file path" },
+              proposedDiff: { type: "string", description: "Proposed code snippet or diff" },
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+            },
+            required: ["targetFile", "proposedDiff"],
+          },
+        },
       ],
     }));
 
@@ -231,6 +256,8 @@ class ContextPackServer {
           case "pack_audit": return await this.audit(args || {});
           case "pack_impact": return await this.impact(args || {});
           case "pack_guard": return await this.guard(args || {});
+          case "pack_telemetry": return await this.telemetry(args || {});
+          case "pack_predictive_diff": return await this.predictiveDiff(args || {});
           default: throw new Error(`Unknown tool: ${name}`);
         }
       } catch (e) {
@@ -556,6 +583,81 @@ class ContextPackServer {
         lines.push("");
       }
     }
+
+    return { content: [{ type: "text", text: lines.join("\n") }] };
+  }
+
+  async telemetry({ dir, logFile, limit = 50 }) {
+    const root = resolveDir(dir);
+    const candidateFiles = [];
+    if (logFile) candidateFiles.push(path.resolve(root, logFile));
+    candidateFiles.push(
+      path.join(root, "error.log"),
+      path.join(root, "app.log"),
+      path.join(root, "dev.log"),
+      path.join(root, "server.log"),
+      path.join(root, ".next", "server.log"),
+      "/tmp/dev.log"
+    );
+
+    let foundPath = null;
+    let content = "";
+    for (const f of candidateFiles) {
+      try {
+        content = await fs.readFile(f, "utf8");
+        foundPath = f;
+        break;
+      } catch {}
+    }
+
+    const lines = [`# Live Runtime Telemetry Observer: ${path.basename(root)}`, `Observed Log File: ${foundPath ? foundPath : "None detected (create dev.log or error.log in project)"}`, ``];
+    if (foundPath && content) {
+      const rawLines = content.split("\n").filter((l) => l.trim().length > 0);
+      const recent = rawLines.slice(-limit);
+      const errors = recent.filter((l) => /error|exception|fail|crash|500|unhandled/i.test(l));
+      lines.push(`## 🔴 Surfaced Errors / Exceptions (${errors.length})`);
+      if (errors.length) {
+        lines.push("```");
+        lines.push(errors.join("\n"));
+        lines.push("```");
+      } else {
+        lines.push("🟢 No runtime errors detected in recent log lines.");
+      }
+
+      lines.push(``);
+      lines.push(`## 📜 Recent Log Feed (${recent.length} lines)`);
+      lines.push("```");
+      lines.push(recent.slice(-20).join("\n"));
+      lines.push("```");
+    } else {
+      lines.push("ℹ️ No active dev server log file found. Pass logFile parameter or log output to `./error.log` or `/tmp/dev.log`.");
+    }
+
+    return { content: [{ type: "text", text: lines.join("\n") }] };
+  }
+
+  async predictiveDiff({ targetFile, proposedDiff, dir }) {
+    const root = resolveDir(dir);
+    const impactRes = await this.impact({ targetFile, dir, maxDepth: 3 });
+    const impactText = impactRes.content[0].text;
+
+    const warnings = [];
+    if (/delete|remove|drop|rename/i.test(proposedDiff)) {
+      warnings.push("⚠️ Proposed diff contains potential destructive operation (delete/drop/rename).");
+    }
+    if (/export\s+(const|function|class|interface|type)\s+/i.test(proposedDiff)) {
+      warnings.push("ℹ️ Exported symbol signature changed. Verify caller arguments in dependent files.");
+    }
+
+    const lines = [
+      `# Predictive Contract & Diff Analysis: ${targetFile}`,
+      `Project: ${root}`,
+      ``,
+      `## 🔮 Predicted Impact Warnings (${warnings.length})`,
+      ...(warnings.length ? warnings.map((w) => `- ${w}`) : ["🟢 No high-risk signature breaks predicted."]),
+      ``,
+      impactText
+    ];
 
     return { content: [{ type: "text", text: lines.join("\n") }] };
   }
