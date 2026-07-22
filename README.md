@@ -5,6 +5,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/codex-dev-mcp-suite.svg)](https://www.npmjs.com/package/codex-dev-mcp-suite)
 [![license](https://img.shields.io/npm/l/codex-dev-mcp-suite.svg)](./LICENSE)
 [![node](https://img.shields.io/node/v/codex-dev-mcp-suite.svg)](https://nodejs.org)
+[![Saweria](https://img.shields.io/badge/Saweria-Dukung%20Proyek-FAAE2B?style=flat&logo=saweria&logoColor=black)](https://saweria.co/sijuling)
 
 Published as `codex-dev-mcp-suite` for backward compatibility.
 
@@ -348,6 +349,12 @@ account system. Everything is stored as files on your machine. No data leaves
 your machine unless you explicitly configure an external model/API endpoint for
 rerank or embeddings. See [privacy and data flow](docs/privacy.md). Your
 personal vault/journal/checkpoints are gitignored.
+
+## ☕ Support / Donasi
+
+Jika `codex-dev-mcp-suite` bermanfaat untuk produktivitas pengkodean Anda, dukung pengembangan proyek open-source ini melalui Saweria (QRIS, GoPay, DANA, OVO, ShopeePay):
+
+[![Saweria](https://img.shields.io/badge/Saweria-Dukung%20Proyek-FAAE2B?style=for-the-badge&logo=saweria&logoColor=black)](https://saweria.co/sijuling)
 
 ## License
 
