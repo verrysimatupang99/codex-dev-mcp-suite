@@ -44,7 +44,7 @@ jobs:
         run: |
           set -euo pipefail
           EXPECTED="$(node -e 'console.log(JSON.parse(require("fs").readFileSync("package.json","utf8")).version)')"
-          TARBALL="$(npm pack)"
+          TARBALL="$(npm pack | tail -n 1)"
           TMP="$(mktemp -d)"
           cp "$TARBALL" "$TMP/"
           cd "$TMP"
