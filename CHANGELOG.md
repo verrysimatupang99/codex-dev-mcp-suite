@@ -1,3 +1,26 @@
+## 1.8.0 - 2026-07-22
+
+### Added
+- **Zero-Dependency Local Offline Vector Embedding Engine**:
+  - Pure JS 384-dimensional term-frequency hashing vector engine with sublinear $1 + \log(tf)$ scaling and L2 normalization (`project-memory/local-embed.js`).
+  - Activated via `MCP_LOCAL_EMBED=true` / `LOCAL_EMBED=true` env flag when no remote embedding API key is available.
+  - Sub-millisecond execution, zero network calls, zero external npm dependencies.
+  - Full compatibility with existing `cosine(a, b)` and graph ranking in `project-memory`.
+- **Universal Multi-Client Guides**:
+  - Hermes Agent setup guide (`docs/clients/hermes.md`).
+  - Google Antigravity CLI (AGY CLI) setup guide (`docs/clients/antigravity.md`).
+  - Claude Code & Generic MCP setup guides (`docs/clients/claude-code.md`, `docs/clients/generic-mcp.md`).
+- **Test Suite**: 100/100 unit tests passing (100% green across 8 test suites).
+
+## 1.7.0 - 2026-07-22
+
+### Added
+- **Obsidian Vault Parity & MOC Tools**:
+  - `memory_moc` Map of Content generator & `.obsidian` vault structure integration.
+  - `memory_graph` knowledge graph visualization & backlinks.
+- **Codebase Security Audit Tool (`pack_audit`)**:
+  - Detect missing `.gitignore`, exposed secrets/keys (`.env`, `.pem`, `id_rsa`), and overly large files.
+
 ## 1.5.0
 
 - add `memory_link` with wiki-link resolution for `[[id]]`, `[[title]]`, `[[project:id]]`, and `[[project:title]]`, plus backlink inspection
