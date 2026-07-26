@@ -1,37 +1,13 @@
-## 1.8.0 - 2026-07-22
-
-### Added
-- **Zero-Dependency Local Offline Vector Embedding Engine**:
-  - Pure JS 384-dimensional term-frequency hashing vector engine with sublinear $1 + \log(tf)$ scaling and L2 normalization (`project-memory/local-embed.js`).
-  - Activated via `MCP_LOCAL_EMBED=true` / `LOCAL_EMBED=true` env flag when no remote embedding API key is available.
-  - Sub-millisecond execution, zero network calls, zero external npm dependencies.
-  - Full compatibility with existing `cosine(a, b)` and graph ranking in `project-memory`.
-- **Universal Multi-Client Guides**:
-  - Hermes Agent setup guide (`docs/clients/hermes.md`).
-  - Google Antigravity CLI (AGY CLI) setup guide (`docs/clients/antigravity.md`).
-  - Claude Code & Generic MCP setup guides (`docs/clients/claude-code.md`, `docs/clients/generic-mcp.md`).
-- **Test Suite**: 100/100 unit tests passing (100% green across 8 test suites).
-
-## 1.7.0 - 2026-07-22
-
-### Added
-- **Obsidian Vault Parity & MOC Tools**:
-  - `memory_moc` Map of Content generator & `.obsidian` vault structure integration.
-  - `memory_graph` knowledge graph visualization & backlinks.
-- **Codebase Security Audit Tool (`pack_audit`)**:
-  - Detect missing `.gitignore`, exposed secrets/keys (`.env`, `.pem`, `id_rsa`), and overly large files.
-
-## 1.5.0
-
-- add `memory_link` with wiki-link resolution for `[[id]]`, `[[title]]`, `[[project:id]]`, and `[[project:title]]`, plus backlink inspection
-- add `memory_global_recall` with same-project bias and graceful keyword/semantic fallback across project vaults
-- add `memory_dedup` with non-destructive duplicate suggestions for project or global scope
-- add hybrid lazy graph backfill so link metadata is derived on first graph-aware use and remains rebuildable from canonical notes
-- add graph-aware soft boost in recall paths without making embeddings mandatory
-- 36 project-memory tests pass after graph/global/dedup coverage expansion
-
 # Changelog
 
+## 3.2.0 - 2026-07-27 — Session Conversation Watchdog & Transcript Digesting 🧠
+
+### Added
+- **Session Conversation Watchdog & Transcript Digesting (`project-memory`)**:
+  - Added `scanSessionLogs()` helper in `auto-indexer.js` to autonomously scan recent `.jsonl`, `.json`, or `.log` session transcript files across `.codex/`, `.gemini/`, `.agents/logs/`, and custom session directories.
+  - Heuristic keyword analysis automatically detects architectural decisions, migration plans, and strategy discussions (e.g., V1 vs V2 trading bots).
+  - Upgraded `memory_auto_index` tool schema (`server.js`) with `scanSessions` and `sessionDir` parameters.
+  - Auto-derived decisions are now persisted directly into the Obsidian knowledge vault as individual notes (`notesCreated`), ensuring key chat discussions are permanently indexed and searchable via `memory_recall`.
 ## 3.1.1 - 2026-07-22 — CI/CD Hardening & Complete Wizard Tracking 🛡️
 
 ### Fixed
@@ -79,6 +55,39 @@
   - Automatically queries npm registry in the background once every 24 hours (cached locally).
   - Notifies users via `stderr` when a new version of `codex-dev-mcp-suite` is published to upstream npm.
   - Safe for stdio MCP JSON-RPC protocol transport; sub-millisecond execution, zero startup latency.
+
+## 1.8.0 - 2026-07-22
+
+### Added
+- **Zero-Dependency Local Offline Vector Embedding Engine**:
+  - Pure JS 384-dimensional term-frequency hashing vector engine with sublinear $1 + \log(tf)$ scaling and L2 normalization (`project-memory/local-embed.js`).
+  - Activated via `MCP_LOCAL_EMBED=true` / `LOCAL_EMBED=true` env flag when no remote embedding API key is available.
+  - Sub-millisecond execution, zero network calls, zero external npm dependencies.
+  - Full compatibility with existing `cosine(a, b)` and graph ranking in `project-memory`.
+- **Universal Multi-Client Guides**:
+  - Hermes Agent setup guide (`docs/clients/hermes.md`).
+  - Google Antigravity CLI (AGY CLI) setup guide (`docs/clients/antigravity.md`).
+  - Claude Code & Generic MCP setup guides (`docs/clients/claude-code.md`, `docs/clients/generic-mcp.md`).
+- **Test Suite**: 100/100 unit tests passing (100% green across 8 test suites).
+
+## 1.7.0 - 2026-07-22
+
+### Added
+- **Obsidian Vault Parity & MOC Tools**:
+  - `memory_moc` Map of Content generator & `.obsidian` vault structure integration.
+  - `memory_graph` knowledge graph visualization & backlinks.
+- **Codebase Security Audit Tool (`pack_audit`)**:
+  - Detect missing `.gitignore`, exposed secrets/keys (`.env`, `.pem`, `id_rsa`), and overly large files.
+
+## 1.5.0
+
+- add `memory_link` with wiki-link resolution for `[[id]]`, `[[title]]`, `[[project:id]]`, and `[[project:title]]`, plus backlink inspection
+- add `memory_global_recall` with same-project bias and graceful keyword/semantic fallback across project vaults
+- add `memory_dedup` with non-destructive duplicate suggestions for project or global scope
+- add hybrid lazy graph backfill so link metadata is derived on first graph-aware use and remains rebuildable from canonical notes
+- add graph-aware soft boost in recall paths without making embeddings mandatory
+- 36 project-memory tests pass after graph/global/dedup coverage expansion
+
 
 ## 1.4.0 - 2026-06-17
 

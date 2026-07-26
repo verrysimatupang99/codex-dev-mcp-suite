@@ -437,12 +437,14 @@ class ProjectMemoryServer {
         },
         {
           name: "memory_auto_index",
-          description: "Run autonomous background observer to inspect git commits, branch switches, and file modifications to auto-derive project notes.",
+          description: "Run autonomous background observer to inspect git commits, branch switches, file modifications, and chat session transcripts to auto-derive project notes and architectural decisions.",
           inputSchema: {
             type: "object",
             properties: {
               dir: { type: "string", description: "Project directory (defaults to CWD)" },
               dryRun: { type: "boolean", description: "Preview derived knowledge without saving", default: false },
+              scanSessions: { type: "boolean", description: "Scan recent chat session logs/transcripts to auto-extract architectural decisions and key discussions", default: true },
+              sessionDir: { type: "string", description: "Optional custom directory containing session JSONL logs" },
             },
           },
         },
@@ -876,17 +878,26 @@ class ProjectMemoryServer {
     return { content: [{ type: "text", text: lines.join("\n") }] };
   }
 
-  async autoIndex({ dir, dryRun = false } = {}) {
+  async autoIndex({ dir, dryRun = false, scanSessions = true, sessionDir = null } = {}) {
     const p = this.paths(dir);
-    const res = await runAutoIndexer(dir, { dryRun });
+    const res = await runAutoIndexer(dir, { dryRun, scanSessions, sessionDir });
     if (!dryRun && res.summaryText) {
       await this.save({
         title: `Auto-Index ${new Date().toISOString().substring(0, 10)} (${res.branch})`,
         content: res.summaryText,
         dir,
-        tags: ["auto-index", "git"],
+        tags: ["auto-index", "git", "session-digest"],
         kind: "auto-derived"
       });
+      for (const note of (res.notesCreated || [])) {
+        await this.save({
+          title: note.title,
+          content: note.content,
+          dir,
+          tags: note.tags || ["session-digest", "auto-derived"],
+          kind: "session-digest"
+        });
+      }
     }
     return { content: [{ type: "text", text: res.summaryText + (dryRun ? "\n\n(Dry Run — note not saved)" : "\n\n(Saved to project memory vault)") }] };
   }
