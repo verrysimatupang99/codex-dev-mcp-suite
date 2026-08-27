@@ -135,6 +135,16 @@ class ContextPackServer {
     this.server.setRequestHandler(ListToolsRequestSchema, () => ({
       tools: [
         {
+          name: "pack_find_todos",
+          description: "Scan the codebase for TODO, FIXME, HACK, and NOTE comments to surface technical debt.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" }
+            }
+          }
+        },
+        {
           name: "pack_overview",
           description: "Build a compact project briefing: detected stack, key config files (with short excerpts), top-level dirs, and file counts. Call at session start to get oriented cheaply.",
           inputSchema: {
@@ -253,6 +263,7 @@ class ContextPackServer {
           case "pack_tree": return await this.tree(args || {});
           case "pack_outline": return await this.outline(args || {});
           case "pack_search": return await this.search(args || {});
+          case "pack_find_todos": return await this.findTodos(args || {});
           case "pack_audit": return await this.audit(args || {});
           case "pack_impact": return await this.impact(args || {});
           case "pack_guard": return await this.guard(args || {});
@@ -330,12 +341,63 @@ class ContextPackServer {
     return { content: [{ type: "text", text: `Outline of ${abs}\n${totalLines} lines, ${syms.length} symbols:\n${list}` }] };
   }
 
-  async search({ query, dir, limit = 50 }) {
+  async search({ query, dir, limit = 50, include_content = false }) {
     const root = resolveDir(dir);
     const q = String(query).toLowerCase();
     const all = await walk(root, "", [], 0, 10);
-    const hits = all.filter((f) => !f.dir && f.rel.toLowerCase().includes(q)).map((f) => f.rel).slice(0, Math.max(1, Math.min(500, limit)));
-    return { content: [{ type: "text", text: hits.length ? `Matches for "${query}" (${hits.length}):\n` + hits.map((h) => `  ${h}`).join("\n") : `No path matches for "${query}" in ${root}` }] };
+    const max = Math.max(1, Math.min(500, limit));
+    
+    if (!include_content) {
+      const hits = all.filter((f) => !f.dir && f.rel.toLowerCase().includes(q)).map((f) => f.rel).slice(0, max);
+      return { content: [{ type: "text", text: hits.length ? `Matches for "${query}" (${hits.length}):\n` + hits.map((h) => `  ${h}`).join("\n") : `No path matches for "${query}" in ${root}` }] };
+    } else {
+      const hits = [];
+      for (const f of all) {
+        if (f.dir) continue;
+        if (hits.length >= max) break;
+        try {
+          const stat = await fs.stat(path.join(root, f.rel));
+          if (stat.size > MAX_FILE_BYTES) continue;
+          const content = await fs.readFile(path.join(root, f.rel), "utf8");
+          if (content.toLowerCase().includes(q)) {
+            const lines = content.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+               if (lines[i].toLowerCase().includes(q)) {
+                  hits.push(`${f.rel}:${i+1} -> ${lines[i].trim().slice(0, 120)}`);
+                  if (hits.length >= max) break;
+               }
+            }
+          }
+        } catch { /* ignore */ }
+      }
+      return { content: [{ type: "text", text: hits.length ? `Content matches for "${query}" (${hits.length}):\n` + hits.map((h) => `  ${h}`).join("\n") : `No content matches for "${query}" in ${root}` }] };
+    }
+  }
+
+  async findTodos({ dir }) {
+    const root = resolveDir(dir);
+    const all = await walk(root, "", [], 0, 10);
+    const files = all.filter(f => !f.dir && CODE_EXT.has(path.extname(f.rel)));
+    const findings = [];
+    const todoRe = /(TODO|FIXME|HACK|NOTE)[\s:]+(.*)/i;
+    
+    for (const f of files) {
+      try {
+        const stat = await fs.stat(path.join(root, f.rel));
+        if (stat.size > MAX_FILE_BYTES) continue;
+        const content = await fs.readFile(path.join(root, f.rel), "utf8");
+        const lines = content.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+          const m = lines[i].match(todoRe);
+          if (m) {
+            findings.push(`${f.rel}:${i+1} [${m[1].toUpperCase()}] ${m[2].trim()}`);
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    
+    if (findings.length === 0) return { content: [{ type: "text", text: `No TODO/FIXME/HACK found in ${root}` }] };
+    return { content: [{ type: "text", text: `Found ${findings.length} technical debt items:\n\n` + findings.slice(0, 500).join("\n") }] };
   }
 
   

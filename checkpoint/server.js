@@ -21,6 +21,7 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 import crypto from "crypto";
+import { execSync } from "child_process";
 
 const ROOT =
   process.env.CHECKPOINT_DIR ||
@@ -134,12 +135,13 @@ class CheckpointServer {
         },
         {
           name: "checkpoint_diff",
-          description: "Summarize what changed between a checkpoint and current files (added/modified/deleted lists).",
+          description: "Summarize what changed between a checkpoint and current files. Pass detailed=true to get actual unified diffs of modified files.",
           inputSchema: {
             type: "object",
             properties: {
               id: { type: "string", description: "Checkpoint id" },
               dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              detailed: { type: "boolean", description: "If true, returns unified diff content of modified files." }
             },
             required: ["id"],
           },
@@ -232,18 +234,41 @@ class CheckpointServer {
     return { added, modified, deleted };
   }
 
-  async diff({ id, dir }) {
+  async diff({ id, dir, detailed = false }) {
     const p = this.paths(dir);
     const m = await this.loadManifest(p);
     const cp = m.checkpoints?.[id];
     if (!cp) throw new Error(`Checkpoint ${id} not found in ${p.slug}`);
     const d = await this.computeDiff(p, cp);
+    
+    let text = `Diff vs ${id} (${cp.created}) in ${p.slug}:\n`;
     const fmt = (arr) => arr.length ? arr.slice(0, 100).map((x) => `  ${x}`).join("\n") : "  (none)";
-    return { content: [{ type: "text", text:
-      `Diff vs ${id} (${cp.created}) in ${p.slug}:\n` +
-      `Added (${d.added.length}):\n${fmt(d.added)}\n` +
-      `Modified (${d.modified.length}):\n${fmt(d.modified)}\n` +
-      `Deleted (${d.deleted.length}):\n${fmt(d.deleted)}` }] };
+    
+    text += `Added (${d.added.length}):\n${fmt(d.added)}\n`;
+    text += `Deleted (${d.deleted.length}):\n${fmt(d.deleted)}\n`;
+    text += `Modified (${d.modified.length}):\n`;
+    
+    if (!detailed) {
+       text += fmt(d.modified) + "\n\n(Pass detailed=true for unified diff)";
+    } else {
+       const snapDir = path.join(p.snaps, id);
+       for (let i = 0; i < Math.min(d.modified.length, 20); i++) {
+          const rel = d.modified[i];
+          const oldPath = path.join(snapDir, cp.files[rel].hash);
+          const newPath = path.join(p.root, rel);
+          try {
+             const diffOut = execSync(`diff -u "${oldPath}" "${newPath}" || true`).toString();
+             // Remove the absolute paths from diff header to keep it clean
+             const cleanDiff = diffOut.split("\n").map(l => l.replace(oldPath, `[CHECKPOINT]/${rel}`).replace(newPath, `[CURRENT]/${rel}`)).join("\n");
+             text += `\n--- ${rel} ---\n${cleanDiff}`;
+          } catch (e) {
+             text += `\n--- ${rel} ---\n(Binary or failed diff)\n`;
+          }
+       }
+       if (d.modified.length > 20) text += `\n... and ${d.modified.length - 20} more files.`;
+    }
+    
+    return { content: [{ type: "text", text }] };
   }
 
   async restore({ id, dir, clean = false }) {
