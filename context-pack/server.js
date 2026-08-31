@@ -240,7 +240,6 @@ class ContextPackServer {
           },
         },
         {
-                  {
           name: "pack_dense_brief",
           description: "Extract an ultra-dense, token-budgeted structural briefing of a file or directory (exports, function signatures, interfaces, routes, line counts) with ~85% token reduction.",
           inputSchema: {

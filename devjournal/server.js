@@ -194,7 +194,6 @@ class DevJournalServer {
           },
         },
         {
-                  {
           name: "journal_standup",
           description: "Generate a formatted developer standup digest (Completed, In Progress, Blockers, Decisions) from recent journal logs and active handoff.",
           inputSchema: {
