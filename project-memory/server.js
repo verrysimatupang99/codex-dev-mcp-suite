@@ -436,6 +436,21 @@ class ProjectMemoryServer {
           },
         },
         {
+                  {
+          name: "memory_import_session",
+          description: "Ingest and extract key decisions, bugs solved, and architecture notes from a conversation or session digest into permanent Markdown memory notes.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Title for the imported memory snapshot" },
+              sessionText: { type: "string", description: "Raw transcript or summary text of the session" },
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              tags: { type: "array", items: { type: "string" }, description: "Tags for the notes" },
+            },
+            required: ["title", "sessionText"],
+          },
+        },
+        {
           name: "memory_auto_index",
           description: "Run autonomous background observer to inspect git commits, branch switches, file modifications, and chat session transcripts to auto-derive project notes and architectural decisions.",
           inputSchema: {

@@ -240,6 +240,20 @@ class ContextPackServer {
           },
         },
         {
+                  {
+          name: "pack_dense_brief",
+          description: "Extract an ultra-dense, token-budgeted structural briefing of a file or directory (exports, function signatures, interfaces, routes, line counts) with ~85% token reduction.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              target: { type: "string", description: "File path or directory relative to project root" },
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              maxLines: { type: "number", description: "Max lines in dense output", default: 150 },
+            },
+            required: ["target"],
+          },
+        },
+        {
           name: "pack_predictive_diff",
           description: "Simulate proposed file changes against caller files to predict breaking contract or API signature changes.",
           inputSchema: {

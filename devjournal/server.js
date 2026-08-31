@@ -194,6 +194,18 @@ class DevJournalServer {
           },
         },
         {
+                  {
+          name: "journal_standup",
+          description: "Generate a formatted developer standup digest (Completed, In Progress, Blockers, Decisions) from recent journal logs and active handoff.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              dir: { type: "string", description: "Project directory (defaults to CWD)" },
+              sinceHours: { type: "number", description: "Hours to look back (default: 24)", default: 24 },
+            },
+          },
+        },
+        {
           name: "journal_compress",
           description: "Compress and summarize verbose journal timeline entries into a ultra-compact (~500 token) snapshot to prevent context window compaction traps.",
           inputSchema: {
