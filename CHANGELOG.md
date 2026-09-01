@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.5.0 - 2026-09-01 — Token-Dense Briefing, Standup Digest & Semantic Session Import ⚡
+
+### Added
+- **Ultra High-Density Project Briefing (`context-pack`)**:
+  - Added `pack_dense_brief` tool providing ultra-compact project overviews (stack, active branch, entry points, exported symbols, test commands) optimized to save 30–50% context window tokens on session start.
+- **Cross-Session Standup & Daily Summary (`devjournal`)**:
+  - Added `journal_standup` tool aggregating recent session handoffs, recent bugfixes, and active blockers into a structured daily standup report.
+- **Direct Session Transcript Import (`project-memory`)**:
+  - Added `memory_import_session` tool to ingest conversation logs (`.jsonl`, `.json`, `.log`) directly into permanent knowledge notes with automatic decision extraction.
+- **Fast Content & Pattern Search (`context-pack`)**:
+  - Added `pack_find_todos` to surface `@todo`, `FIXME`, and pending task markers across codebase.
+  - Added `pack_search` for fast path-and-content substring search without spawning external processes.
+- **Unified Change Inspection (`checkpoint`)**:
+  - Unified multi-file diff detection and status reporting in `checkpoint_diff`.
+
+### Fixed
+- **MCP Schema Compatibility**:
+  - Cleaned double-brace escaping across all 4 MCP server tool definitions ensuring 100% compliance with strict JSON-RPC validators.
+
 ## 3.2.0 - 2026-07-27 — Session Conversation Watchdog & Transcript Digesting 🧠
 
 ### Added

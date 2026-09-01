@@ -1,0 +1,32 @@
+name: Publish to NPM
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies across all servers
+        run: |
+          for s in project-memory checkpoint context-pack devjournal; do
+            (cd "$s" && npm install --no-audit --no-fund)
+          done
+
+      - name: Run test suite
+        run: node run-tests.mjs
+
+      - name: Publish to NPM
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
