@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.5.1 - 2026-09-13 — Docs Sync Release 📄
+
+### Fixed
+- **Published Package Docs**: The v3.5.0 npm tarball was built before the docs commit, shipping a stale `CHANGELOG.md` (missing the 3.5.0 entry) and `docs/ROADMAP.md` (still v1.7.0 content). This release syncs both into the published package.
+- No code changes — identical to v3.5.0 logic (113/113 unit tests pass).
+
 ## 3.5.0 - 2026-09-01 — Token-Dense Briefing, Standup Digest & Semantic Session Import ⚡
 
 ### Added
