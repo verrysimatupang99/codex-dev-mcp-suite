@@ -170,6 +170,21 @@ Install globally with `npm i -g @maximalabs/dev-mcp-suite` to access built-in ma
 - `prune` — Safely clean up temporary project scratch files (`prune --yes`).
 - `provider-smoke` — Probe configured LLM providers (chat & embedding endpoints) for health and latency.
 
+### 🩺 Troubleshooting
+
+Every server binary answers standard flags without starting the MCP loop:
+
+```bash
+npx -y -p @maximalabs/dev-mcp-suite project-memory-mcp --doctor
+```
+
+| Flag | What it does |
+|---|---|
+| `--doctor` | Prints config diagnostics — version, Node, storage paths, which API keys are set (values always redacted). First stop when a server won't answer. |
+| `--version` / `-v` | Prints the suite version. |
+| `--help` / `-h` | Prints usage for that binary. |
+| `dev-mcp-suite --dry-run` | Preview the init wizard's changes without writing any client config. |
+
 ---
 
 ### 🔒 Privacy & Local-First Philosophy
