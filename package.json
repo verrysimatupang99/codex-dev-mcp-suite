@@ -1,6 +1,6 @@
 {
   "name": "@maximalabs/dev-mcp-suite",
-  "version": "3.6.0",
+  "version": "3.6.1",
   "description": "Local-first MCP servers for solo devs/vibecoders: persistent project memory, session handoff/resume, git-independent checkpoints, token-efficient briefings, and optional fleet ops via an Armada bus. Works with any MCP client.",
   "type": "module",
   "license": "MIT",

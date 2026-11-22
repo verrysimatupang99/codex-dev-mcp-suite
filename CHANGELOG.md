@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.6.1 - 2026-11-22 — OIDC trusted publishing
+
+### Changed
+- `publish.yml` no longer uses `NPM_TOKEN`: publishing now runs on npm
+  **trusted publishing** (GitHub OIDC → short-lived publish credential,
+  publisher: `MaximaLabs/dev-mcp-suite` + `publish.yml`). Adds an
+  `npm@^11.5.1` upgrade step because trusted publishing needs CLI ≥ 11.5.1
+  and Node 20 ships npm 10. No code changes — this release exists to
+  validate the trust on npm's side.
+
 ## 3.6.0 - 2026-11-22 — Rebrand @maximalabs + Armada Fleet MCP 🛰️
 
 ### Changed

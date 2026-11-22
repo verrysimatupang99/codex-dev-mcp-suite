@@ -29,7 +29,12 @@ jobs:
       - name: Run test suite
         run: node run-tests.mjs
 
+      # Trusted publishing (OIDC) requires npm CLI >= 11.5.1; Node 20 ships npm 10.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g "npm@^11.5.1"
+
+      # No NODE_AUTH_TOKEN on purpose: npm exchanges the GitHub OIDC id-token
+      # for a publish credential via the trusted publisher configured on the
+      # package (MaximaLabs/dev-mcp-suite + publish.yml).
       - name: Publish to NPM
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
