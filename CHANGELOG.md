@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Rebrand @maximalabs + Armada Fleet MCP 🛰️
+## 3.6.0 - 2026-11-22 — Rebrand @maximalabs + Armada Fleet MCP 🛰️
 
 ### Changed
 - **Package renamed `codex-dev-mcp-suite` → `@maximalabs/dev-mcp-suite`**:
