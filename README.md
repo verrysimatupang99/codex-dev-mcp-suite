@@ -2,14 +2,14 @@
 
 > **Give your AI Coding Assistant Permanent Brain Power & Zero Memory Loss.**
 
-[![CI](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/verrysimatupang99/codex-dev-mcp-suite/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/codex-dev-mcp-suite.svg)](https://www.npmjs.com/package/codex-dev-mcp-suite)
-[![npm downloads](https://img.shields.io/npm/dm/codex-dev-mcp-suite.svg)](https://www.npmjs.com/package/codex-dev-mcp-suite)
-[![license](https://img.shields.io/npm/l/codex-dev-mcp-suite.svg)](./LICENSE)
-[![node](https://img.shields.io/node/v/codex-dev-mcp-suite.svg)](https://nodejs.org)
+[![CI](https://github.com/MaximaLabs/dev-mcp-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/MaximaLabs/dev-mcp-suite/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@maximalabs/dev-mcp-suite.svg)](https://www.npmjs.com/package/@maximalabs/dev-mcp-suite)
+[![npm downloads](https://img.shields.io/npm/dm/@maximalabs/dev-mcp-suite.svg)](https://www.npmjs.com/package/@maximalabs/dev-mcp-suite)
+[![license](https://img.shields.io/npm/l/@maximalabs/dev-mcp-suite.svg)](./LICENSE)
+[![node](https://img.shields.io/node/v/@maximalabs/dev-mcp-suite.svg)](https://nodejs.org)
 [![Saweria](https://img.shields.io/badge/Saweria-Dukung%20Proyek-FAAE2B?style=flat&logo=saweria&logoColor=black)](https://saweria.co/sijuling)
 
-Published on npm as `codex-dev-mcp-suite`.
+Published on npm as `@maximalabs/dev-mcp-suite`.
 
 ---
 
@@ -40,13 +40,13 @@ Published on npm as `codex-dev-mcp-suite`.
 Automatically configure all installed AI tools (Codex CLI, Claude Code, Cursor, Windsurf, Hermes, Antigravity) with 1 command:
 
 ```bash
-npx -y codex-dev-mcp-suite init
+npx -y @maximalabs/dev-mcp-suite init
 ```
 
 Or test a single server right now without installing:
 
 ```bash
-npx -y -p codex-dev-mcp-suite project-memory-mcp --help
+npx -y -p @maximalabs/dev-mcp-suite project-memory-mcp --help
 ```
 
 ---
@@ -80,19 +80,19 @@ npx -y -p codex-dev-mcp-suite project-memory-mcp --help
 ```toml
 [mcp_servers.project-memory]
 command = "npx"
-args = ["-y", "-p", "codex-dev-mcp-suite", "project-memory-mcp"]
+args = ["-y", "-p", "@maximalabs/dev-mcp-suite", "project-memory-mcp"]
 
 [mcp_servers.devjournal]
 command = "npx"
-args = ["-y", "-p", "codex-dev-mcp-suite", "devjournal-mcp"]
+args = ["-y", "-p", "@maximalabs/dev-mcp-suite", "devjournal-mcp"]
 
 [mcp_servers.checkpoint]
 command = "npx"
-args = ["-y", "-p", "codex-dev-mcp-suite", "checkpoint-mcp"]
+args = ["-y", "-p", "@maximalabs/dev-mcp-suite", "checkpoint-mcp"]
 
 [mcp_servers.context-pack]
 command = "npx"
-args = ["-y", "-p", "codex-dev-mcp-suite", "context-pack-mcp"]
+args = ["-y", "-p", "@maximalabs/dev-mcp-suite", "context-pack-mcp"]
 ```
 
 #### 2. Hermes Agent (`~/.hermes/config.yaml`)
@@ -132,7 +132,7 @@ milikmu. Tambahkan manual ke klien yang perlu akses fleet:
   "mcpServers": {
     "armada": {
       "command": "npx",
-      "args": ["-y", "-p", "codex-dev-mcp-suite", "armada-mcp"],
+      "args": ["-y", "-p", "@maximalabs/dev-mcp-suite", "armada-mcp"],
       "env": {
         "ARMADA_BUS_URL": "https://bus.example.com",
         "ARMADA_BUS_TOKEN": "<token-agen>",
@@ -164,7 +164,7 @@ mode `user`/`root`/`sandbox` hanya jalan bila host mengizinkan agenmu.
 
 ### 📊 Utility CLIs Included
 
-Install globally with `npm i -g codex-dev-mcp-suite` to access built-in maintenance tools:
+Install globally with `npm i -g @maximalabs/dev-mcp-suite` to access built-in maintenance tools:
 
 - `stats` — View total notes, journal activity, and storage stats across all projects (`stats --json`).
 - `prune` — Safely clean up temporary project scratch files (`prune --yes`).
@@ -183,7 +183,7 @@ Install globally with `npm i -g codex-dev-mcp-suite` to access built-in maintena
 
 ### ☕ Support / Donasi
 
-Jika `codex-dev-mcp-suite` membantu alur kerja pengkodean Anda dan menghemat waktu Anda, dukung pengembangan proyek open-source ini melalui Saweria (QRIS, GoPay, DANA, OVO, ShopeePay):
+Jika `@maximalabs/dev-mcp-suite` membantu alur kerja pengkodean Anda dan menghemat waktu Anda, dukung pengembangan proyek open-source ini melalui Saweria (QRIS, GoPay, DANA, OVO, ShopeePay):
 
 [![Saweria](https://img.shields.io/badge/Saweria-Dukung%20Proyek-FAAE2B?style=for-the-badge&logo=saweria&logoColor=black)](https://saweria.co/sijuling)
 

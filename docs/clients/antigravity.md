@@ -1,11 +1,11 @@
 # Google Antigravity CLI (AGY CLI) Setup
 
-`codex-dev-mcp-suite` connects seamlessly to **Google Antigravity CLI (AGY CLI)** and the AGY SDK agent framework.
+`@maximalabs/dev-mcp-suite` connects seamlessly to **Google Antigravity CLI (AGY CLI)** and the AGY SDK agent framework.
 
 ## Quick Installation
 
 ```bash
-npm install -g codex-dev-mcp-suite
+npm install -g @maximalabs/dev-mcp-suite
 ```
 
 ## AGY Configuration (`mcp.json` / `settings.json`)
