@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased — Armada Fleet MCP 🛰️
+
+### Added
+- **`armada` MCP server (5th, optional)**: bridges MCP clients to an
+  [Armada](https://github.com/verrysimatupang99/armada) bus — append-only
+  mailbox + policy-gated job queue for fleets of hosts. 9 tools:
+  `fleet_health`, `fleet_jobs`, `job_post`, `job_status`, `job_watch`,
+  `job_tail`, `job_cancel`, `bus_note`, `bus_read`.
+- Config via `ARMADA_BUS_URL` / `ARMADA_BUS_TOKEN` / `ARMADA_AGENT` env or
+  `~/.config/armada/agent.env` (shared with the `armada` CLI).
+- `armada-mcp` bin entry; **not** auto-registered by `init` — it points at
+  the user's own fleet and needs credentials.
+- `armada/test.mjs`: 9 tests against an in-memory fake bus (list tools,
+  health board, note/read, job lifecycle, dedupe, cancel, missing-token
+  error) using the shared `_testkit` harness.
+- Verified end-to-end against the real Python `bus/server.py`: job_post →
+  job_status → bus_note → bus_read.
+
 ## 3.5.1 - 2026-09-13 — Docs Sync Release 📄
 
 ### Fixed

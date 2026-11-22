@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SERVERS = ["project-memory", "checkpoint", "context-pack", "devjournal"];
+const SERVERS = ["project-memory", "checkpoint", "context-pack", "devjournal", "armada"];
 const EXTRA_TESTS = fs.existsSync("tests")
   ? fs.readdirSync("tests").filter((f) => f.endsWith(".test.mjs")).map((f) => `tests/${f}`)
   : [];

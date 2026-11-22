@@ -23,7 +23,7 @@ jobs:
 
       - name: Install deps for each server
         run: |
-          for s in project-memory checkpoint context-pack devjournal; do
+          for s in project-memory checkpoint context-pack devjournal armada; do
             (cd "$s" && npm install --no-audit --no-fund)
           done
 
