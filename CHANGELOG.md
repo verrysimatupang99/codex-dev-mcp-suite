@@ -17,7 +17,7 @@
 
 ### Added
 - **`armada` MCP server (5th, optional)**: bridges MCP clients to an
-  [Armada](https://github.com/verrysimatupang99/armada) bus — append-only
+  [Armada](https://github.com/MaximaLabs/armada) bus — append-only
   mailbox + policy-gated job queue for fleets of hosts. 9 tools:
   `fleet_health`, `fleet_jobs`, `job_post`, `job_status`, `job_watch`,
   `job_tail`, `job_cancel`, `bus_note`, `bus_read`.

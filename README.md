@@ -59,7 +59,7 @@ npx -y -p @maximalabs/dev-mcp-suite project-memory-mcp --help
 | 📜 **`devjournal`** | **Anti-Compaction Session Timeline**: Logs progress, saves handoffs, restores full context, and compresses session logs to cut token costs ~90%. | `journal_log`, `journal_handoff`, `journal_resume`, `journal_timeline`, `journal_search`, `journal_compress`, `journal_clear_handoff` |
 | 🛡️ **`checkpoint`** | **Git-Independent Snapshots**: Take 1-second file snapshots before risky AI refactors. Compare diffs and revert instantly without touching your git tree. | `checkpoint_create`, `checkpoint_list`, `checkpoint_diff`, `checkpoint_restore`, `checkpoint_delete` |
 | 🔍 **`context-pack`** | **Autonomous Agent OS**: Token-efficient briefings, dependency blast-radius analysis (`pack_impact`), self-healing preflight checks (`pack_guard`), live log telemetry (`pack_telemetry`), predictive contract diff simulation (`pack_predictive_diff`), and security auditing (`pack_audit`). | `pack_overview`, `pack_tree`, `pack_outline`, `pack_search`, `pack_audit`, `pack_impact`, `pack_guard`, `pack_telemetry`, `pack_predictive_diff` |
-| 🛰️ **`armada`** *(opsional)* | **Fleet Ops Control Plane**: Watch heartbeats and enqueue policy-gated jobs on many hosts through an [Armada bus](https://github.com/verrysimatupang99/armada) — outbound-only, no SSH fan-in. Host policy grants/denies every job (allowlist → user → root → docker sandbox). *Needs `ARMADA_BUS_URL` + `ARMADA_BUS_TOKEN`; not auto-wired by `init` since it points at YOUR fleet.* | `fleet_health`, `fleet_jobs`, `job_post`, `job_status`, `job_watch`, `job_tail`, `job_cancel`, `bus_note`, `bus_read` |
+| 🛰️ **`armada`** *(opsional)* | **Fleet Ops Control Plane**: Watch heartbeats and enqueue policy-gated jobs on many hosts through an [Armada bus](https://github.com/MaximaLabs/armada) — outbound-only, no SSH fan-in. Host policy grants/denies every job (allowlist → user → root → docker sandbox). *Needs `ARMADA_BUS_URL` + `ARMADA_BUS_TOKEN`; not auto-wired by `init` since it points at YOUR fleet.* | `fleet_health`, `fleet_jobs`, `job_post`, `job_status`, `job_watch`, `job_tail`, `job_cancel`, `bus_note`, `bus_read` |
 
 ---
 
@@ -144,7 +144,7 @@ milikmu. Tambahkan manual ke klien yang perlu akses fleet:
 ```
 
 Tanpa `env`, server membaca `~/.config/armada/agent.env` — file yang sama
-yang dipakai [`armada` CLI](https://github.com/verrysimatupang99/armada),
+yang dipakai [`armada` CLI](https://github.com/MaximaLabs/armada),
 jadi kredensial berbagi satu tempat. `ARMADA_BUS_URL` adalah *origin* bus
 tanpa suffix `/bus`. Ingat: grant dieksekusi oleh policy di host target —
 mode `user`/`root`/`sandbox` hanya jalan bila host mengizinkan agenmu.

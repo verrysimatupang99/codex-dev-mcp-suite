@@ -3,7 +3,7 @@
 /**
  * Armada MCP Server — fleet ops for AI agents.
  *
- * Talks to an Armada bus (https://github.com/verrysimatupang99/armada):
+ * Talks to an Armada bus (https://github.com/MaximaLabs/armada):
  * an append-only mailbox + job queue that thin wr-node daemons poll from
  * every host — outbound only, no inbound ports, no SSH fan-in.
  *
