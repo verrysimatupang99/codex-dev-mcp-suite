@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.6.2 - 2026-11-22 — init arg handling
+
+### Fixed
+- `dev-mcp-suite --version` / `--help` no longer launch the installer
+  wizard: they print and exit before any client config is touched.
+  Previously a bare `--version` wrote MCP entries into every detected
+  client (`~/.claude.json`, `~/.hermes/config.json`, …) as a side effect.
+
 ## 3.6.1 - 2026-11-22 — OIDC trusted publishing
 
 ### Changed
