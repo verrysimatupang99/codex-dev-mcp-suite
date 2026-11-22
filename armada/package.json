@@ -1,0 +1,14 @@
+{
+  "name": "armada-mcp",
+  "version": "1.0.0",
+  "description": "Fleet ops MCP for Armada (MaximaLabs): health watch + policy-gated remote jobs on many hosts",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
