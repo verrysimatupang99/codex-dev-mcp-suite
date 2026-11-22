@@ -185,6 +185,8 @@ npx -y -p @maximalabs/dev-mcp-suite project-memory-mcp --doctor
 | `--help` / `-h` | Prints usage for that binary. |
 | `dev-mcp-suite --dry-run` | Preview the init wizard's changes without writing any client config. |
 
+➡️ Full guide: [docs/troubleshooting.md](docs/troubleshooting.md) — interpreting doctor output, silent-server protocol checks, provider failures, init-wizard fixes.
+
 ---
 
 ### 🔒 Privacy & Local-First Philosophy
