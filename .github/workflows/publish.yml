@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies across all servers
         run: |
-          for s in project-memory checkpoint context-pack devjournal; do
+          for s in project-memory checkpoint context-pack devjournal armada; do
             (cd "$s" && npm install --no-audit --no-fund)
           done
 
