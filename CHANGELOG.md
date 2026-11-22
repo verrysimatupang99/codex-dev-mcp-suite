@@ -1,6 +1,19 @@
 # Changelog
 
-## Unreleased — Armada Fleet MCP 🛰️
+## Unreleased — Rebrand @maximalabs + Armada Fleet MCP 🛰️
+
+### Changed
+- **Package renamed `codex-dev-mcp-suite` → `@maximalabs/dev-mcp-suite`**:
+  umbrella brand MaximaLabs (npm org + GitHub org). Repository moves to
+  `github.com/MaximaLabs/dev-mcp-suite`. npm cannot rename a published
+  package — the old name stays installable and gets a `npm deprecate`
+  pointer; bin names unchanged, self-named bin is now `dev-mcp-suite`
+  (npx strips the scope).
+- `lib/update-check.js`: registry URL encodes the scope (`%2F`) so
+  update checks hit the scoped package.
+- `lib/init-wizard.js`, `bin/init.mjs`, `docs/clients/*`, badges and all
+  living docs updated; dated specs and past CHANGELOG entries keep the
+  historical name on purpose.
 
 ### Added
 - **`armada` MCP server (5th, optional)**: bridges MCP clients to an

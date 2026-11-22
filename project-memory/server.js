@@ -170,7 +170,7 @@ class ProjectMemoryServer {
       showViewHeader: true,
     }, null, 2));
     await fs.writeFile(path.join(obsDir, "workspace.json"), JSON.stringify({
-      _comment: "Auto-managed by codex-dev-mcp-suite (project-memory).",
+      _comment: "Auto-managed by @maximalabs/dev-mcp-suite (project-memory).",
     }, null, 2));
   }
 

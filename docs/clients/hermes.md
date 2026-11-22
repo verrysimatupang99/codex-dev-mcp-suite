@@ -1,13 +1,13 @@
 # Hermes Agent Setup
 
-`codex-dev-mcp-suite` is fully compatible with **Hermes Agent** via the standard Model Context Protocol (MCP) stdio interface.
+`@maximalabs/dev-mcp-suite` is fully compatible with **Hermes Agent** via the standard Model Context Protocol (MCP) stdio interface.
 
 ## Quick Installation
 
 Ensure the package is installed globally or accessible via `npx`:
 
 ```bash
-npm install -g codex-dev-mcp-suite
+npm install -g @maximalabs/dev-mcp-suite
 ```
 
 ## Hermes Configuration (`~/.hermes/config.yaml`)

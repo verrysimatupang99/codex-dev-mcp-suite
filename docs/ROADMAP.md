@@ -1,6 +1,6 @@
-# 🚀 Rencana Kerja & Roadmap Masa Depan — codex-dev-mcp-suite
+# 🚀 Rencana Kerja & Roadmap Masa Depan — @maximalabs/dev-mcp-suite
 
-> **Repository:** [verrysimatupang99/codex-dev-mcp-suite](https://github.com/verrysimatupang99/codex-dev-mcp-suite)  
+> **Repository:** [MaximaLabs/dev-mcp-suite](https://github.com/MaximaLabs/dev-mcp-suite)  
 > **Versi Terbaru:** `v3.5.0` (Token-Dense Briefing, Standup Digest & Semantic Session Import)  
 > **Lisensi:** MIT  
 
@@ -74,4 +74,4 @@ graph TD
 - [x] **CI/CD Auto-Publish on Tag**:
   - GitHub Actions workflow (`.github/workflows/publish.yml`) untuk test & auto-publish ke npmjs saat git tag di-push.
 - [x] **Universal Client Detection**:
-  - Installer wizard (`npx codex-dev-mcp-suite init`) mendukung Antigravity, Codex, Claude Code, Cursor, Windsurf, dan Hermes.
+  - Installer wizard (`npx @maximalabs/dev-mcp-suite init`) mendukung Antigravity, Codex, Claude Code, Cursor, Windsurf, dan Hermes.

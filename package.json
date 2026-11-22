@@ -1,17 +1,17 @@
 {
-  "name": "codex-dev-mcp-suite",
+  "name": "@maximalabs/dev-mcp-suite",
   "version": "3.5.1",
   "description": "Four local, file-based MCP servers for solo devs/vibecoders: persistent project memory, session handoff/resume, git-independent file checkpoints, and token-efficient project briefings. Works with any MCP client.",
   "type": "module",
   "license": "MIT",
   "author": "maximalabs",
-  "homepage": "https://github.com/verrysimatupang99/codex-dev-mcp-suite#readme",
+  "homepage": "https://github.com/MaximaLabs/dev-mcp-suite#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/verrysimatupang99/codex-dev-mcp-suite.git"
+    "url": "git+https://github.com/MaximaLabs/dev-mcp-suite.git"
   },
   "bugs": {
-    "url": "https://github.com/verrysimatupang99/codex-dev-mcp-suite/issues"
+    "url": "https://github.com/MaximaLabs/dev-mcp-suite/issues"
   },
   "keywords": [
     "mcp",
@@ -39,7 +39,7 @@
     "provider-smoke": "bin/provider-smoke.mjs",
     "mcp-ui": "bin/ui.mjs",
     "init": "bin/init.mjs",
-    "codex-dev-mcp-suite": "bin/init.mjs"
+    "dev-mcp-suite": "bin/init.mjs"
   },
   "scripts": {
     "test": "node run-tests.mjs",

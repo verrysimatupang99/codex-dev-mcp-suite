@@ -1,6 +1,6 @@
-# Real-World Multi-Agent Vibe Coding Guide (`codex-dev-mcp-suite`)
+# Real-World Multi-Agent Vibe Coding Guide (`@maximalabs/dev-mcp-suite`)
 
-This guide demonstrates how to combine **Antigravity**, **Hermes Agent**, **Claude Code**, **Cursor**, and **Codex CLI** into a zero-latency, context-synchronized AI team using `codex-dev-mcp-suite`.
+This guide demonstrates how to combine **Antigravity**, **Hermes Agent**, **Claude Code**, **Cursor**, and **Codex CLI** into a zero-latency, context-synchronized AI team using `@maximalabs/dev-mcp-suite`.
 
 ---
 

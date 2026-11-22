@@ -3,7 +3,7 @@
 Install globally:
 
 ```bash
-npm i -g codex-dev-mcp-suite
+npm i -g @maximalabs/dev-mcp-suite
 ```
 
 Add MCP servers using your Claude Code MCP configuration flow. Generic JSON shape:

@@ -18,7 +18,7 @@ async function main() {
     console.log(`✅ [${r.status}] Configured ${r.name} -> ${r.path}`);
   }
 
-  console.log("\n🚀 All detected AI tools have been successfully configured with codex-dev-mcp-suite!");
+  console.log("\n🚀 All detected AI tools have been successfully configured with @maximalabs/dev-mcp-suite!");
   console.log("Restart your AI coding client to start using the 4 MCP servers.");
 }
 

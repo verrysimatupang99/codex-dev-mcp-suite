@@ -5,7 +5,7 @@ Any MCP client that can start stdio servers can use Dev MCP Suite.
 Install globally:
 
 ```bash
-npm i -g codex-dev-mcp-suite
+npm i -g @maximalabs/dev-mcp-suite
 ```
 
 Generic server definitions:
