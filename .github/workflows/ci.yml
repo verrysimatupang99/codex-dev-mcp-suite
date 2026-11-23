@@ -56,3 +56,13 @@ jobs:
             test "$GOT" = "$EXPECTED"
           done
           node "./node_modules/@maximalabs/dev-mcp-suite/bin/init.mjs" --dry-run
+
+  art:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+      - run: node art/build.mjs && node art/build.mjs --light
+      - run: git diff --exit-code -- art/devmcp-flow.svg art/devmcp-flow-light.svg
