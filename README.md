@@ -9,6 +9,11 @@
 [![node](https://img.shields.io/node/v/@maximalabs/dev-mcp-suite.svg)](https://nodejs.org)
 [![Saweria](https://img.shields.io/badge/Saweria-Dukung%20Proyek-FAAE2B?style=flat&logo=saweria&logoColor=black)](https://saweria.co/sijuling)
 
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="art/devmcp-flow-light.svg">
+  <img src="art/devmcp-flow.svg" alt="dev-mcp-suite — The Recall Bench: jurnal DEVJOURNAL menulis slip sesi, pres CONTEXT-PACK mengemas tumpukan konteks jadi bundel, lemari kartu PROJECT-MEMORY mengarsipkan dengan kaca pembesar, rak canister CHECKPOINT menyimpan rol titik-pulih" width="720">
+</picture>
+
 Published on npm as `@maximalabs/dev-mcp-suite`.
 
 ---
